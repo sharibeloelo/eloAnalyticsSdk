@@ -41,7 +41,7 @@ afterEvaluate {
     publishing {
         publications {
             // Creates a publication called "release" (you can name it anything)
-            create<MavenPublication>("maven") {
+            create<MavenPublication>("release") {
                 // Use the group, name, and version from your error log or your desired coordinates
                 groupId = "com.github.greenhorn-eloelo-event"
                 artifactId = "analytics" // The name of your library module
