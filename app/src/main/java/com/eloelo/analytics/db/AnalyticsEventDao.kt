@@ -5,7 +5,6 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.eloelo.analytics.AnalyticsEvent
-import com.eloelo.analytics.model.Event
 
 @Dao
 interface AnalyticsEventDao {
