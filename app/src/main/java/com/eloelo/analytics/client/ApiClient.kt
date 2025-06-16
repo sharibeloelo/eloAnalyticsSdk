@@ -18,7 +18,7 @@ import kotlinx.serialization.json.Json
  *
  * @param endpoint The URL of the backend service.
  */
-class ApiClient(private val baseUrl: String) {
+class ApiClient(private val urlPath: String) {
 
     private val httpClient = HttpClient {
         install(ContentNegotiation) {
@@ -38,7 +38,7 @@ class ApiClient(private val baseUrl: String) {
      * @return A boolean indicating if the call was successful.
      */
     suspend fun sendEvents(events: List<Event>): Boolean {
-        Log.d("ApiClient", "Preparing to send ${events.size} events to $baseUrl")
+        Log.d("ApiClient", "Preparing to send ${events.size} events to $urlPath")
 
         // In a real implementation, you would serialize the 'events' list to JSON
         // and send it as the body of a POST request.
@@ -46,7 +46,7 @@ class ApiClient(private val baseUrl: String) {
         // val jsonPayload = gson.toJson(events)
         // ... make actual HTTP POST request here ...
         return try {
-            val response = httpClient.post("$baseUrl/events") {
+            val response = httpClient.post(urlPath) {
                 contentType(ContentType.Application.Json)
                 setBody(events)
             }
