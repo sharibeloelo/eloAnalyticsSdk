@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
+    id("maven-publish")
 }
 
 android {
@@ -34,6 +35,24 @@ android {
     }
     kotlinOptions {
         jvmTarget = "11"
+    }
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            // Creates a publication called "release" (you can name it anything)
+            create<MavenPublication>("release") {
+                // Use the group, name, and version from your error log or your desired coordinates
+                groupId = "com.github.greenhorn-eloelo-event"
+                artifactId = "analytics" // The name of your library module
+                version = "1.0"
+
+                // Tell Maven to publish the AAR file from the 'release' build type
+                from(components.findByName("release"))
+                // Optional: You can also include sources and Javadoc
+            }
+        }
     }
 }
 
