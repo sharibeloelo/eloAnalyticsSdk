@@ -24,12 +24,6 @@ interface AnalyticsEventDao {
     @Query("SELECT * FROM analytics_events WHERE isSynced = 0 ORDER BY timestamp ASC LIMIT :limit")
     suspend fun getUnsyncedEvents(limit: Int): List<AnalyticsEvent>
 
-    /**
-     * Deletes a list of events from the database, identified by their IDs.
-     * @param eventIds The list of primary keys of the events to delete.
-     */
-    @Query("DELETE FROM analytics_events WHERE id IN (:eventIds)")
-    suspend fun deleteEvents(eventIds: List<Long>)
 
     /**
      * Gets the total count of events currently stored in the database.
@@ -41,6 +35,10 @@ interface AnalyticsEventDao {
     @Query("UPDATE analytics_events SET isSynced = 1 WHERE id IN (:eventIds)")
     suspend fun markEventsAsSynced(eventIds: List<Long>)
 
+    /**
+     * Deletes a list of events from the database, identified by their IDs.
+     * @param eventIds The list of primary keys of the events to delete.
+     */
     @Query("DELETE FROM analytics_events WHERE id IN (:eventIds)")
     suspend fun deleteSyncedEvents(eventIds: List<Long>)
 
