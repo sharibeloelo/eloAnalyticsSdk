@@ -1,4 +1,4 @@
-package com.eloelo.analytics.extension
+package com.greenhorn.neuronet.extension
 
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope

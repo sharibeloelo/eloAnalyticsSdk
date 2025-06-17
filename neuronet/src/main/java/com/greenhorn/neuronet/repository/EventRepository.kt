@@ -1,9 +1,9 @@
-package com.eloelo.analytics.repository
+package com.greenhorn.neuronet.repository
 
-import com.eloelo.analytics.db.AnalyticsDatabase
-import com.eloelo.analytics.model.Event
-import com.eloelo.analytics.toDbEntity
-import com.eloelo.analytics.toEvent
+import com.greenhorn.neuronet.db.AnalyticsDatabase
+import com.greenhorn.neuronet.model.Event
+import com.greenhorn.neuronet.toDbEntity
+import com.greenhorn.neuronet.toEvent
 import kotlin.collections.map
 
 /**

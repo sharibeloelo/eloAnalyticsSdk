@@ -1,4 +1,4 @@
-package com.eloelo.analytics.worker
+package com.greenhorn.neuronet.worker
 
 import android.content.Context
 import android.net.ConnectivityManager
@@ -12,10 +12,10 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import com.eloelo.analytics.client.ApiClient
-import com.eloelo.analytics.db.AnalyticsDatabase
-import com.eloelo.analytics.dispatcher.EventDispatcher
-import com.eloelo.analytics.repository.EventRepository
+import com.greenhorn.neuronet.client.ApiClient
+import com.greenhorn.neuronet.db.AnalyticsDatabase
+import com.greenhorn.neuronet.dispatcher.EventDispatcher
+import com.greenhorn.neuronet.repository.EventRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit

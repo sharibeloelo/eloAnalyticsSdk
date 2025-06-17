@@ -1,10 +1,10 @@
-package com.eloelo.analytics.db
+package com.greenhorn.neuronet.db
 
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import com.eloelo.analytics.AnalyticsEvent
+import com.greenhorn.neuronet.AnalyticsEvent
 
 @Dao
 interface AnalyticsEventDao {

@@ -1,14 +1,14 @@
-package com.eloelo.analytics
+package com.greenhorn.neuronet
 
 import android.content.Context
-import com.eloelo.analytics.client.ApiClient
-import com.eloelo.analytics.constant.Constant
-import com.eloelo.analytics.db.AnalyticsDatabase
-import com.eloelo.analytics.dispatcher.EventDispatcher
-import com.eloelo.analytics.extension.safeLaunch
-import com.eloelo.analytics.model.Event
-import com.eloelo.analytics.repository.EventRepository
-import com.eloelo.analytics.worker.EventSyncWorker
+import com.greenhorn.neuronet.client.ApiClient
+import com.greenhorn.neuronet.constant.Constant
+import com.greenhorn.neuronet.db.AnalyticsDatabase
+import com.greenhorn.neuronet.dispatcher.EventDispatcher
+import com.greenhorn.neuronet.extension.safeLaunch
+import com.greenhorn.neuronet.model.Event
+import com.greenhorn.neuronet.repository.EventRepository
+import com.greenhorn.neuronet.worker.EventSyncWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

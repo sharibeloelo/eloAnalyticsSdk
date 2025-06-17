@@ -1,4 +1,4 @@
-package com.eloelo.analytics.model
+package com.greenhorn.neuronet.model
 
 import kotlinx.serialization.Serializable
 

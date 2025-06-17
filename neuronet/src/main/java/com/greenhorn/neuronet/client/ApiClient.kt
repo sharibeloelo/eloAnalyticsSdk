@@ -1,8 +1,8 @@
-package com.eloelo.analytics.client
+package com.greenhorn.neuronet.client
 
 import android.net.http.HttpResponseCache.install
 import android.util.Log
-import com.eloelo.analytics.model.Event
+import com.greenhorn.neuronet.model.Event
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.post

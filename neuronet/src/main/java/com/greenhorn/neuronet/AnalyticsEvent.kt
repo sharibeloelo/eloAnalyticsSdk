@@ -1,10 +1,10 @@
-package com.eloelo.analytics
+package com.greenhorn.neuronet
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
-import com.eloelo.analytics.model.Event
+import com.greenhorn.neuronet.model.Event
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 

@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    id("maven-publish")
 }
 
 android {
@@ -37,24 +36,6 @@ android {
     }
 }
 
-afterEvaluate {
-    publishing {
-        publications {
-            // Creates a publication called "release" (you can name it anything)
-            create<MavenPublication>("release") {
-                // Use the group, name, and version from your error log or your desired coordinates
-                groupId = "com.github.greenhorn-eloelo-event"
-                artifactId = "analytics" // The name of your library module
-                version = "1.0"
-
-                // Tell Maven to publish the AAR file from the 'release' build type
-                from(components.findByName("release"))
-                // Optional: You can also include sources and Javadoc
-            }
-        }
-    }
-}
-
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
@@ -62,23 +43,4 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-
-    //Ktor
-    implementation(libs.ktor.client.content.negotiation)
-    implementation(libs.ktor.ktor.serialization.kotlinx.json)
-    implementation(libs.ktor.client.core)
-    implementation(libs.ktor.client.okhttp)
-
-
-    implementation(libs.kotlinx.serialization.json)
-
-    // Work-Manager
-    implementation(libs.androidx.work.runtime.ktx)
-
-    //Room-Db
-    implementation(libs.androidx.room.ktx)
-    implementation(libs.room.runtime)
-    annotationProcessor(libs.room.compiler)
-
-    implementation(libs.gson)
 }

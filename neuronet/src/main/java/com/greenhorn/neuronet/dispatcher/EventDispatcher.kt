@@ -1,9 +1,8 @@
-package com.eloelo.analytics.dispatcher
+package com.greenhorn.neuronet.dispatcher
 
-import com.eloelo.analytics.AnalyticsEvent
-import com.eloelo.analytics.client.ApiClient
-import com.eloelo.analytics.model.Event
-import com.eloelo.analytics.repository.EventRepository
+import com.greenhorn.neuronet.client.ApiClient
+import com.greenhorn.neuronet.model.Event
+import com.greenhorn.neuronet.repository.EventRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

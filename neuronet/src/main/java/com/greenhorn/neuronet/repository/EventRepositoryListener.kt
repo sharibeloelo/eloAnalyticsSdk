@@ -1,7 +1,6 @@
-package com.eloelo.analytics.repository
+package com.greenhorn.neuronet.repository
 
-import com.eloelo.analytics.AnalyticsEvent
-import com.eloelo.analytics.model.Event
+import com.greenhorn.neuronet.model.Event
 
 interface EventRepositoryListener {
     suspend fun insertEvent(event: Event)
