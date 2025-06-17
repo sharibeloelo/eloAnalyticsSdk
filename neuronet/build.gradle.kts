@@ -25,11 +25,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "1.8"
     }
     publishing {
         singleVariant("release") {
@@ -48,9 +48,9 @@ publishing {
             afterEvaluate {
                 from(components["release"])
                 // Use the group, name, and version from your error log or your desired coordinates
-                groupId = "com.github.greenhorn-eloelo-event"
-                artifactId = "analytics" // The name of your library module
-                version = "1.0"
+//                groupId = "com.github.greenhorn-eloelo-event"
+//                artifactId = "analytics" // The name of your library module
+//                version = "1.0"
             }
         }
     }

@@ -2,16 +2,8 @@
 
 # Use a specific JDK version. JDK 21 is a modern Long-Term Support (LTS) version.
 jdk:
-  - openjdk21
+  - openjdk17
 
-# Commands to run before the main build command.
-# This 'before_install' step is optional but can be useful for diagnostics or setup.
 before_install:
-  - echo "Starting JitPack build..."
-  - ./gradlew --version
-
-# The main build command.
-# This tells JitPack to execute the 'publishToMavenLocal' task specifically on your library module.
-# IMPORTANT: Replace 'analytics-sdk' with your library's module name.
-install:
-  - ./gradlew :analytics-sdk:publishToMavenLocal
+  - sdk install java 17.0.7-open
+  - sdk use java 17.0.7-open
