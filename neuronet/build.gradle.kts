@@ -17,7 +17,7 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
+            isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -48,9 +48,9 @@ publishing {
             afterEvaluate {
                 from(components["release"])
                 // Use the group, name, and version from your error log or your desired coordinates
-//                groupId = "com.github.greenhorn-eloelo-event"
-//                artifactId = "analytics" // The name of your library module
-//                version = "1.0"
+                groupId = "com.github.greenhorn-eloelo-event"
+                artifactId = "analytics" // The name of your library module
+                version = "1.0.3"
             }
         }
     }
