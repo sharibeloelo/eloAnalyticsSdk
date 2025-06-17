@@ -30,39 +30,14 @@ class EventSyncWorker(
     workerParams: WorkerParameters
 ) : CoroutineWorker(appContext, workerParams) {
 
-    // These would typically be injected by a DI framework like Hilt or Koin,
-    // but we initialize them manually here for simplicity.
-    private val repository: EventRepository by lazy {
-        EventRepository(AnalyticsDatabase.getInstance(applicationContext).analyticsEventDao() as AnalyticsDatabase)
-    }
-
-    private val eventApi: ApiClient by lazy {
-        ApiClient("https://your-backend-api.com") // Replace with your actual base URL
-    }
-    private val eventDispatcher: EventDispatcher by lazy {
-        EventDispatcher(repository, eventApi)
-    }
-
-//    private val repository: EventRepository by lazy {
-//        val dao = AnalyticsDatabase.getInstance(applicationContext).analyticsEventDao()
-//        EventRepository(eventRepository)
-//    }
-
-    private val apiClient: ApiClient by lazy {
-        // Retrieve the API endpoint from the worker's input data
-        val apiEndpoint = inputData.getString(KEY_API_ENDPOINT)
-            ?: throw IllegalStateException("API endpoint not provided to EventSyncWorker")
-        ApiClient(apiEndpoint)
-    }
-
     companion object {
-        const val WORK_NAME = "com.yourapp.analytics.EventSyncWorker"
-        const val KEY_API_ENDPOINT = "API_ENDPOINT"
-        const val BATCH_SIZE = 10
+        const val WORK_NAME = "com.greenhorn.neuronet.EventSyncWorker"
         const val KEY_HAS_NETWORK = "hasNetwork"
+        private var eventDispatcher: EventDispatcher?= null
 
 
-        fun enqueueWork(context: Context, hasNetwork: Boolean = true) {
+        fun enqueueWork(context: Context, hasNetwork: Boolean = true, eventDispatcher : EventDispatcher) {
+            this.eventDispatcher = eventDispatcher
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
@@ -100,7 +75,7 @@ class EventSyncWorker(
             }
 
             return@withContext try {
-                eventDispatcher.triggerEventUpload()
+                eventDispatcher?.triggerEventUpload()
                 Result.success()
             } catch (e: Exception) {
                 println("Event upload failed: ${e.message}. Retrying.")

@@ -20,7 +20,7 @@ data class AnalyticsEvent(
     val id: Long = 0,
     val eventName: String,
     val isUserLogin: Boolean,
-    val payload: Map<String, String>,
+    val payload: Map<String, Any>,
     val timestamp: String,
     val sessionTimeStamp: String,
     val isSynced: Boolean = false

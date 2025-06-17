@@ -23,10 +23,11 @@ import kotlinx.coroutines.launch
  * @property workManager The WorkManager instance for scheduling background tasks.
  * @property apiEndpoint The backend URL to send events to.
  */
-class AnalyticsSdk private constructor(
+class PublishEvent private constructor(
     private val context: Context,
     private val eventDispatcher: EventDispatcher,
     private val appFlyerId: String ?= null,
+    private val sessionId : String ?= null,
     scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 ) {
     // A dedicated CoroutineScope for SDK operations
@@ -44,12 +45,11 @@ class AnalyticsSdk private constructor(
                          * It uses a unique work policy to prevent multiple workers from running simultaneously.
                          * Constraints ensure the worker only runs when the network is available.
                          */
-                        EventSyncWorker.Companion.enqueueWork(context)
+                        EventSyncWorker.enqueueWork(context, eventDispatcher = eventDispatcher)
                     }
                 }
         }
     }
-
 
     /**
      * Tracks a new event.
@@ -58,7 +58,7 @@ class AnalyticsSdk private constructor(
      * @param eventName A descriptive name for the event.
      * @param params A map of key-value pairs for additional event data.
      */
-    fun track(eventName: String, isUserLogin : Boolean, payload: MutableMap<String, String>) {
+    fun track(eventName: String, isUserLogin : Boolean, payload: MutableMap<String, Any>) {
         val eventTs =
             payload[Constant.TIME_STAMP] ?: System.currentTimeMillis()
                 .toString()
@@ -69,8 +69,8 @@ class AnalyticsSdk private constructor(
                 eventName = eventName,
                 isUserLogin = isUserLogin,
                 payload = payload,
-                timestamp = eventTs,
-                sessionTimeStamp = ""
+                timestamp = eventTs.toString(),
+                sessionTimeStamp = sessionId.orEmpty()
             )
             eventDispatcher.addEvent(event)
         }, {
@@ -80,14 +80,21 @@ class AnalyticsSdk private constructor(
 
 
     /**
-     * Builder class for constructing an [AnalyticsSdk] instance.
+     * Builder class for constructing an [PublishEvent] instance.
      */
     class Builder(private val context: Context) {
         private var apiEndpoint: String? = null
         private var appFlyerId: String? = null
+        private var sessionId: String? = null
+        private var batchSize: Int = 10
 
         fun setApiEndpoint(endpoint: String): Builder {
             this.apiEndpoint = endpoint
+            return this
+        }
+
+        fun setSessionId(timeStamp: String) : Builder{
+            this.sessionId = timeStamp
             return this
         }
 
@@ -96,13 +103,18 @@ class AnalyticsSdk private constructor(
             return this
         }
 
-        fun build(): AnalyticsSdk {
+        fun setBatchSize(batchSize: Int): Builder {
+            this.batchSize = batchSize
+            return this
+        }
+
+        fun build(): PublishEvent {
             apiEndpoint ?: throw IllegalStateException("API endpoint must be set before building the SDK.")
             val database = AnalyticsDatabase.getInstance(context)
             val eventRepository = EventRepository(database)
             val eventApi = ApiClient(apiEndpoint.orEmpty())
-            val eventDispatcher = EventDispatcher(eventRepository, eventApi)
-            return AnalyticsSdk(context, eventDispatcher, appFlyerId)
+            val eventDispatcher = EventDispatcher(eventRepository, eventApi, batchSize)
+            return PublishEvent(context, eventDispatcher, appFlyerId, sessionId)
         }
     }
 }

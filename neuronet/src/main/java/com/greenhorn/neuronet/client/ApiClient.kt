@@ -1,6 +1,5 @@
 package com.greenhorn.neuronet.client
 
-import android.net.http.HttpResponseCache.install
 import android.util.Log
 import com.greenhorn.neuronet.model.Event
 import io.ktor.client.HttpClient
@@ -50,7 +49,7 @@ class ApiClient(private val urlPath: String) {
                 contentType(ContentType.Application.Json)
                 setBody(events)
             }
-            Log.d("ApiClient", "Successfully sent ${events.size} events.")
+            Log.d("ApiClient", "Successfully sent ${response.status.value} events.")
             response.status.value == 200 // Or whatever your success status is
         }catch (e: Exception){
             Log.e("ApiClient", "Error sending events: ${e.message}")
