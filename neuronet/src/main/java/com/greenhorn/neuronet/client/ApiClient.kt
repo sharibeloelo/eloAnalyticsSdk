@@ -3,7 +3,9 @@ package com.greenhorn.neuronet.client
 import android.util.Log
 import com.greenhorn.neuronet.model.Event
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.DefaultRequest
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
@@ -20,6 +22,11 @@ import kotlinx.serialization.json.Json
 class ApiClient(private val urlPath: String) {
 
     private val httpClient = HttpClient {
+        install(DefaultRequest) {
+            // Add your static headers here
+            header("X-Api-Key", "YOUR_API_KEY")
+        }
+
         install(ContentNegotiation) {
             json(Json {
                 ignoreUnknownKeys = true
