@@ -19,6 +19,7 @@ import kotlinx.coroutines.sync.withLock
 class EventDispatcher(
     private val eventRepository: EventRepository,
     private val eventApi: ApiClient,
+    private val finalApiEndpoint : String,
     private val batchSize: Int = 10,
     scope: CoroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 ) {
@@ -35,7 +36,7 @@ class EventDispatcher(
         _pendingEventCount
             .filter { it >= batchSize }
             .onEach {
-                triggerEventUpload()
+                triggerEventUpload(finalApiEndpoint)
             }
             .launchIn(scope)
     }
@@ -47,13 +48,13 @@ class EventDispatcher(
         }
     }
 
-    suspend fun triggerEventUpload() {
+    suspend fun triggerEventUpload(url : String) {
         pendingEventsMutex.withLock {
             val eventsToUpload = eventRepository.getUnsyncedEvents(batchSize)
             if (eventsToUpload.isNotEmpty()) {
                 println("Attempting to upload ${eventsToUpload.size} events.")
-                val success = eventApi.sendEvents(eventsToUpload)
-                if (success) {
+                val response = eventApi.sendEvents(url, eventsToUpload)
+                if (response.isSuccessful) {
                     val uploadedEventIds = eventsToUpload.map { it.id }
                     eventRepository.markEventsAsSynced(uploadedEventIds)
                     eventRepository.deleteSyncedEvents(uploadedEventIds) // Clean up

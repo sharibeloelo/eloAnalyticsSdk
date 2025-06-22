@@ -33,10 +33,13 @@ class EventSyncWorker(
     companion object {
         const val WORK_NAME = "com.greenhorn.neuronet.EventSyncWorker"
         const val KEY_HAS_NETWORK = "hasNetwork"
+        const val URL = "url"
         private var eventDispatcher: EventDispatcher?= null
 
 
-        fun enqueueWork(context: Context, hasNetwork: Boolean = true, eventDispatcher : EventDispatcher) {
+        fun enqueueWork(context: Context?, hasNetwork: Boolean = true, eventDispatcher : EventDispatcher, finalApiEndpoint : String) {
+            context ?: throw IllegalStateException("Context should not be null..!")
+
             this.eventDispatcher = eventDispatcher
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -45,7 +48,7 @@ class EventSyncWorker(
             val uploadRequest = OneTimeWorkRequestBuilder<EventSyncWorker>()
                 .setConstraints(constraints)
                 .addTag(WORK_NAME)
-                .setInputData(Data.Builder().putBoolean(KEY_HAS_NETWORK, hasNetwork).build())
+                .setInputData(Data.Builder().putBoolean(KEY_HAS_NETWORK, hasNetwork).putString(URL, finalApiEndpoint).build())
                 .setBackoffCriteria(
                     BackoffPolicy.EXPONENTIAL,
                     10, // Initial delay
@@ -69,13 +72,14 @@ class EventSyncWorker(
         try {
             println("EventUploadWorker running...")
             val networkStatus = inputData.getBoolean(KEY_HAS_NETWORK, true) // Assume network is available if not specified
+            val url = inputData.getString(KEY_HAS_NETWORK) // Assume network is available if not specified
             if (!networkStatus && !isNetworkAvailable(applicationContext)) {
                 println("No network connectivity. Retrying later.")
                 return@withContext Result.retry()
             }
 
             return@withContext try {
-                eventDispatcher?.triggerEventUpload()
+                eventDispatcher?.triggerEventUpload(url.orEmpty())
                 Result.success()
             } catch (e: Exception) {
                 println("Event upload failed: ${e.message}. Retrying.")
