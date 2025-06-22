@@ -72,7 +72,7 @@ class EventSyncWorker(
         try {
             println("EventUploadWorker running...")
             val networkStatus = inputData.getBoolean(KEY_HAS_NETWORK, true) // Assume network is available if not specified
-            val url = inputData.getString(KEY_HAS_NETWORK) // Assume network is available if not specified
+            val url = inputData.getString(URL) // Assume network is available if not specified
             if (!networkStatus && !isNetworkAvailable(applicationContext)) {
                 println("No network connectivity. Retrying later.")
                 return@withContext Result.retry()
