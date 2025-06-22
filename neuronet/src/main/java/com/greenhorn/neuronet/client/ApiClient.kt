@@ -1,6 +1,8 @@
 package com.greenhorn.neuronet.client
 
 import android.util.Log
+import com.google.gson.JsonArray
+import com.greenhorn.neuronet.extension.toJsonObject
 import com.greenhorn.neuronet.model.Event
 import com.greenhorn.neuronet.service.ApiService
 import retrofit2.Response
@@ -25,6 +27,10 @@ class ApiClient(val apiClient: ApiService){
     suspend fun sendEvents(url : String, events: List<Event>) : Response<Void> {
         // In a real implementation, you would serialize the 'events' list to JSON
         // and send it as the body of a POST request.
-        return apiClient.trackEvent(url, events)
+        val jsonArray = JsonArray()
+        events.forEach { event ->
+            jsonArray.add(event.toJsonObject())
+        }
+        return apiClient.trackEvent(url, jsonArray)
     }
 }

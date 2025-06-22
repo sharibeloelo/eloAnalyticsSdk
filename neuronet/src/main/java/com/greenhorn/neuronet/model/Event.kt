@@ -10,5 +10,7 @@ data class Event(
     val payload: Map<String, Any>,
     val timestamp: String,
     val sessionTimeStamp: String,
-    val isSynced: Boolean = false // To track if the event has been sent
+    val isSynced: Boolean = false, // To track if the event has been sent
+    val primaryId: String,
+    val sessionId: String,
 )

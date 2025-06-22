@@ -1,5 +1,6 @@
 package com.greenhorn.neuronet
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverter
@@ -17,21 +18,23 @@ import com.google.gson.reflect.TypeToken
 @TypeConverters(EventParamsConverter::class)
 data class AnalyticsEvent(
     @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
-    val eventName: String,
-    val isUserLogin: Boolean,
-    val payload: Map<String, Any>,
-    val timestamp: String,
-    val sessionTimeStamp: String,
-    val isSynced: Boolean = false
+    @ColumnInfo("id") val id: Long = 0,
+    @ColumnInfo("event_name")  val eventName: String,
+    @ColumnInfo("is_user_login") val isUserLogin: Boolean,
+    @ColumnInfo("event_data") val payload: Map<String, Any>,
+    @ColumnInfo("time_stamp")  val timestamp: String,
+    @ColumnInfo("session_time_stamp") val sessionTimeStamp: String,
+    @ColumnInfo("isSynced") val isSynced: Boolean = false,
+    @ColumnInfo("primaryId") val primaryId: String,
+    @ColumnInfo("sessionId") val sessionId: String
 )
 
 fun Event.toDbEntity(): AnalyticsEvent {
-    return AnalyticsEvent(id, eventName, isUserLogin, payload, timestamp, sessionTimeStamp, isSynced)
+    return AnalyticsEvent(id, eventName, isUserLogin, payload, timestamp, sessionTimeStamp, isSynced, primaryId, sessionId)
 }
 
 fun AnalyticsEvent.toEvent(): Event {
-    return Event(id, eventName, isUserLogin, payload, timestamp, sessionTimeStamp, isSynced)
+    return Event(id, eventName, isUserLogin, payload, timestamp, sessionTimeStamp, isSynced, primaryId, sessionId)
 }
 
 /**

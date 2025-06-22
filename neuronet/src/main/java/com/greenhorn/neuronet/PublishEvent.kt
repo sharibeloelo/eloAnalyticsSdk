@@ -70,7 +70,7 @@ class PublishEvent private constructor(
      * @param eventName A descriptive name for the event.
      * @param params A map of key-value pairs for additional event data.
      */
-    fun track(eventName: String, isUserLogin: Boolean, payload: MutableMap<String, Any>) {
+    fun track(eventName: String, userId : Long, isUserLogin: Boolean, payload: MutableMap<String, Any>) {
         val eventTs =
             payload[Constant.TIME_STAMP] ?: System.currentTimeMillis()
                 .toString()
@@ -78,11 +78,14 @@ class PublishEvent private constructor(
 
         scope.safeLaunch({
             val event = Event(
+                id = userId,
                 eventName = eventName,
                 isUserLogin = isUserLogin,
                 payload = payload,
                 timestamp = eventTs.toString(),
-                sessionTimeStamp = sessionId.orEmpty()
+                sessionTimeStamp = sessionId.orEmpty(),
+                primaryId = "${userId}_${eventTs}",
+                sessionId = "${userId}_${sessionId}"
             )
             eventDispatcher.addEvent(event)
         }, {
