@@ -5,8 +5,10 @@ import com.greenhorn.neuronet.client.ApiClient
 import com.greenhorn.neuronet.constant.Constant
 import com.greenhorn.neuronet.db.AnalyticsDatabase
 import com.greenhorn.neuronet.dispatcher.EventDispatcher
+import com.greenhorn.neuronet.enum.PRIORITY
 import com.greenhorn.neuronet.extension.safeLaunch
 import com.greenhorn.neuronet.interceptor.HttpInterceptor
+import com.greenhorn.neuronet.interceptor.RetryInterceptor
 import com.greenhorn.neuronet.model.Event
 import com.greenhorn.neuronet.repository.EventRepository
 import com.greenhorn.neuronet.service.ApiService
@@ -45,7 +47,7 @@ class PublishEvent private constructor(
         scope.launch {
             eventDispatcher.pendingEventCount
                 .collect { count ->
-                    if (count >= 10) { // Batch size
+                    if (count >= eventDispatcher.getBatchSizeOfEvents()) { // Batch size
                         println("Event count reached 10 on Android. Enqueuing work.")
 
                         /**
@@ -70,7 +72,7 @@ class PublishEvent private constructor(
      * @param eventName A descriptive name for the event.
      * @param params A map of key-value pairs for additional event data.
      */
-    fun track(eventName: String, userId : Long, isUserLogin: Boolean, payload: MutableMap<String, Any>) {
+    fun track(eventName: String, userId : Long, isUserLogin: Boolean, payload: MutableMap<String, Any>, priority: PRIORITY = PRIORITY.LOW) {
         val eventTs =
             payload[Constant.TIME_STAMP] ?: System.currentTimeMillis()
                 .toString()
@@ -87,9 +89,16 @@ class PublishEvent private constructor(
                 primaryId = "${userId}_${eventTs}",
                 sessionId = "${userId}_${sessionId}"
             )
-            eventDispatcher.addEvent(event)
+
+            when(priority){
+                PRIORITY.LOW ->{
+                    eventDispatcher.addEvent(event)
+                }
+                else -> {
+                    eventDispatcher.sendSingleEvent(event = event)
+                }
+            }
         }, {
-//            eloAnalyticUtils.recordFirebaseNonFatal(error = it)
         })
     }
 
@@ -131,6 +140,7 @@ class PublishEvent private constructor(
 
             okHttpClient = OkHttpClient.Builder()
                 .addInterceptor(interceptor)
+                .addInterceptor(RetryInterceptor())
                 .addInterceptor(loggingInterceptor ?: HttpLoggingInterceptor().apply {
                     HttpLoggingInterceptor.Level.NONE
                 }

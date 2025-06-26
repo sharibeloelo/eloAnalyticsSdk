@@ -33,4 +33,12 @@ class ApiClient(val apiClient: ApiService){
         }
         return apiClient.trackEvent(url, jsonArray)
     }
+
+    suspend fun sendSingleEvents(url : String, events: Event) : Response<Void> {
+        // In a real implementation, you would serialize the 'events' list to JSON
+        // and send it as the body of a POST request.
+        val jsonArray = JsonArray()
+        jsonArray.add(events.toJsonObject())
+        return apiClient.trackEvent(url, jsonArray)
+    }
 }

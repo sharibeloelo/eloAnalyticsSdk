@@ -1,6 +1,7 @@
 package com.greenhorn.neuronet.dispatcher
 
 import com.greenhorn.neuronet.client.ApiClient
+import com.greenhorn.neuronet.enum.PRIORITY
 import com.greenhorn.neuronet.model.Event
 import com.greenhorn.neuronet.repository.EventRepository
 import kotlinx.coroutines.CoroutineScope
@@ -41,10 +42,30 @@ class EventDispatcher(
             .launchIn(scope)
     }
 
+    fun getBatchSizeOfEvents() = batchSize
+
     suspend fun addEvent(event: Event) {
         pendingEventsMutex.withLock {
             eventRepository.insertEvent(event)
             _pendingEventCount.value = eventRepository.getEventCount()
+        }
+    }
+
+    suspend fun sendSingleEvent(event: Event){
+        pendingEventsMutex.withLock {
+            triggerEventUpload(event)
+        }
+    }
+
+    private suspend fun triggerEventUpload(event: Event?) {
+        pendingEventsMutex.withLock {
+            if(event == null) return@withLock
+            val response = eventApi.sendSingleEvents(finalApiEndpoint, event)
+            if (response.isSuccessful) {
+                println("Successfully uploaded event.${response}")
+            } else {
+                println("Failed to upload event. Will retry later.")
+            }
         }
     }
 

@@ -46,6 +46,5 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
-    implementation("com.github.greenhorn-eloelo-event:neuronet:1.0.2")
-
+    implementation(libs.neuronet)
 }
