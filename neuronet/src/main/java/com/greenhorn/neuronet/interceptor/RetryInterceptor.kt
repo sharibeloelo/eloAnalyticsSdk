@@ -7,7 +7,7 @@ import kotlin.random.Random
 
 class RetryInterceptor(private val maxRetries: Int = 3) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): okhttp3.Response {
-        var request = chain.request()
+        val request = chain.request()
         var response: okhttp3.Response? = null
         var exception: IOException? = null
         var tryCount = 0

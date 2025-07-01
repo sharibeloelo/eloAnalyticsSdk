@@ -37,7 +37,7 @@ class EventSyncWorker(
         private var eventDispatcher: EventDispatcher?= null
 
 
-        fun enqueueWork(context: Context?, hasNetwork: Boolean = true, eventDispatcher : EventDispatcher, finalApiEndpoint : String) {
+        fun enqueueWork(context: Context?, eventDispatcher : EventDispatcher, finalApiEndpoint : String) {
             context ?: throw IllegalStateException("Context should not be null..!")
 
             this.eventDispatcher = eventDispatcher
@@ -48,7 +48,7 @@ class EventSyncWorker(
             val uploadRequest = OneTimeWorkRequestBuilder<EventSyncWorker>()
                 .setConstraints(constraints)
                 .addTag(WORK_NAME)
-                .setInputData(Data.Builder().putBoolean(KEY_HAS_NETWORK, hasNetwork).putString(URL, finalApiEndpoint).build())
+                .setInputData(Data.Builder().putString(URL, finalApiEndpoint).build())
                 .setBackoffCriteria(
                     BackoffPolicy.EXPONENTIAL,
                     10, // Initial delay
@@ -71,9 +71,8 @@ class EventSyncWorker(
         Log.d("EventSyncWorker", "Worker started. Attempt: $runAttemptCount")
         try {
             println("EventUploadWorker running...")
-            val networkStatus = inputData.getBoolean(KEY_HAS_NETWORK, true) // Assume network is available if not specified
             val url = inputData.getString(URL) // Assume network is available if not specified
-            if (!networkStatus && !isNetworkAvailable(applicationContext)) {
+            if (!isNetworkAvailable(applicationContext)) {
                 println("No network connectivity. Retrying later.")
                 return@withContext Result.retry()
             }
