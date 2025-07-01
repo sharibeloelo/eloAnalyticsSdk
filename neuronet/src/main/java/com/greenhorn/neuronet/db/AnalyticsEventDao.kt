@@ -21,6 +21,8 @@ interface AnalyticsEventDao {
      * @param limit The maximum number of events to retrieve.
      * @return A list of AnalyticsEvent.
      */
+    //TODO: sorting rows by timeStamp in our case since, the data comes very frequently and gets pushed instantly
+    // and anyways it will be sorted in the BE and add sorting query will unnecessary increase overhead time if the table grows larger
     @Query("SELECT * FROM analytics_events WHERE isSynced = 0 ORDER BY timestamp ASC LIMIT :limit")
     suspend fun getUnsyncedEvents(limit: Int): List<AnalyticsEvent>
 

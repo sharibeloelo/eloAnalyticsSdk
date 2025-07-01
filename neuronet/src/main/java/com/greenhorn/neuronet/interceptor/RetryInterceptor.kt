@@ -5,6 +5,9 @@ import okio.IOException
 import kotlin.math.pow
 import kotlin.random.Random
 
+//todo: we can use workManager only for High priority events also, since it also has retry mechanism and
+// its more reliable since even if the app is killed or app crashed the data wont be lost(HIGHLY IMP. for us)
+// Also, creating an interceptor is also little complicated which is not required here.
 class RetryInterceptor(private val maxRetries: Int = 3) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): okhttp3.Response {
         var request = chain.request()

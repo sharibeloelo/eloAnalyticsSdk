@@ -65,6 +65,8 @@ class EventDispatcher(
                 println("Successfully uploaded event.${response}")
             } else {
                 println("Failed to upload event. Will retry later.")
+                //TODO: Since, if api is failed the data will be lost as in this case we are not saving
+                // data to localDB. Its better to save it in local db incase of failure or use in memory like it is and also save in local and db and delet after success.
             }
         }
     }
@@ -77,6 +79,10 @@ class EventDispatcher(
                 val response = eventApi.sendEvents(url, eventsToUpload)
                 if (response.isSuccessful) {
                     val uploadedEventIds = eventsToUpload.map { it.id }
+                    //TODO: do batching for deleting events large number events deletion can result into crash. Check implementation
+                    // in EloAnalytics
+
+                    //TODO: WHY ARE WE deleting sync events then marking same ids synced?? if we have already deleted they wont exist,
                     eventRepository.markEventsAsSynced(uploadedEventIds)
                     eventRepository.deleteSyncedEvents(uploadedEventIds) // Clean up
                     _pendingEventCount.value = eventRepository.getEventCount()

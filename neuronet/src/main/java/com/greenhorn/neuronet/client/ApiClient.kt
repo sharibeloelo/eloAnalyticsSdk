@@ -15,6 +15,7 @@ import kotlin.jvm.java
  *
  * @param endpoint The URL of the backend service.
  */
+//TODO: THIS SHOULD BE INJECTED VIA DI to not make it coupled in the dependent classes
 class ApiClient(val apiClient: ApiService){
     /**
      * Simulates sending a batch of events to the backend.
@@ -34,6 +35,7 @@ class ApiClient(val apiClient: ApiService){
         return apiClient.trackEvent(url, jsonArray)
     }
 
+    //TODO: CAN MAKE OVERLOAD FUNCTION WITH DIFFERENT SIGNATURE
     suspend fun sendSingleEvents(url : String, events: Event) : Response<Void> {
         // In a real implementation, you would serialize the 'events' list to JSON
         // and send it as the body of a POST request.

@@ -25,6 +25,11 @@ import java.util.concurrent.TimeUnit
  * It fetches events from the local database, sends them to the backend,
  * and handles success, failure, and retry logic.
  */
+//todo: this can be improved: Use the same logic as implemented in Eloelo, thats more performant efficient and reliable.
+// Create a single workManager and create tasks to push batches but use liveData observer to to check status of current enqueued tasks,
+// if any is enqueued or blocked dont add next one and use these enqueued or blocked to push all the data in a single api
+// Also, no need of using retry mechanism, since the task enqueing is so fast we dont need single event push for high priority events
+// Make sure to delet only after successful push. and avoid multiple fetching of db data since the data can be very large
 class EventSyncWorker(
     appContext: Context,
     workerParams: WorkerParameters
@@ -49,17 +54,18 @@ class EventSyncWorker(
                 .setConstraints(constraints)
                 .addTag(WORK_NAME)
                 .setInputData(Data.Builder().putBoolean(KEY_HAS_NETWORK, hasNetwork).putString(URL, finalApiEndpoint).build())
-                .setBackoffCriteria(
+                .setBackoffCriteria(  //todo: retry mech not required
                     BackoffPolicy.EXPONENTIAL,
                     10, // Initial delay
                     TimeUnit.SECONDS
                 )
                 .build()
 
-            WorkManager.getInstance(context).enqueue(uploadRequest)
+            WorkManager.getInstance(context).enqueue(uploadRequest) //todo: why not used enqueueUniqueWork
         }
     }
 
+    //todo: not required
     private fun isNetworkAvailable(context: Context): Boolean {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connectivityManager.activeNetwork ?: return false
@@ -73,6 +79,8 @@ class EventSyncWorker(
             println("EventUploadWorker running...")
             val networkStatus = inputData.getBoolean(KEY_HAS_NETWORK, true) // Assume network is available if not specified
             val url = inputData.getString(URL) // Assume network is available if not specified
+
+            //todo: not required, will be handle by workManager and for logging, handle HttpException
             if (!networkStatus && !isNetworkAvailable(applicationContext)) {
                 println("No network connectivity. Retrying later.")
                 return@withContext Result.retry()
