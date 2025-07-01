@@ -9,6 +9,7 @@ import com.greenhorn.neuronet.enum.PRIORITY
 import com.greenhorn.neuronet.extension.safeLaunch
 import com.greenhorn.neuronet.interceptor.HttpInterceptor
 import com.greenhorn.neuronet.interceptor.RetryInterceptor
+import com.greenhorn.neuronet.listener.PublishEventListener
 import com.greenhorn.neuronet.model.Event
 import com.greenhorn.neuronet.repository.EventRepository
 import com.greenhorn.neuronet.service.ApiService
@@ -34,14 +35,15 @@ import java.util.concurrent.TimeUnit
  * @property workManager The WorkManager instance for scheduling background tasks.
  * @property apiEndpoint The backend URL to send events to.
  */
-class PublishEvent private constructor(
-    private val context: WeakReference<Context>,
+class PublishEvent(
+    context: Context,
     private val finalApiEndpoint: String,
     private val eventDispatcher: EventDispatcher,
     private val appFlyerId: String? = null,
     private val sessionId: String? = null,
     private val scope: CoroutineScope,
-) {
+) : PublishEventListener {
+    private val contextRef = WeakReference(context)
 
     init {
         scope.launch {
@@ -56,7 +58,7 @@ class PublishEvent private constructor(
                          * Constraints ensure the worker only runs when the network is available.
                          */
                         EventSyncWorker.enqueueWork(
-                            context.get(),
+                            contextRef.get(),
                             eventDispatcher = eventDispatcher,
                             finalApiEndpoint = finalApiEndpoint
                         )
@@ -72,7 +74,7 @@ class PublishEvent private constructor(
      * @param eventName A descriptive name for the event.
      * @param params A map of key-value pairs for additional event data.
      */
-    fun track(eventName: String, userId : Long, isUserLogin: Boolean, payload: MutableMap<String, Any>, priority: PRIORITY = PRIORITY.LOW) {
+    override suspend fun track(eventName: String, userId : Long, isUserLogin: Boolean, payload: MutableMap<String, Any>, priority: PRIORITY) {
         val eventTs =
             payload[Constant.TIME_STAMP] ?: System.currentTimeMillis()
                 .toString()
@@ -165,7 +167,7 @@ class PublishEvent private constructor(
                 EventDispatcher(eventRepository, apiClient, finalApiEndpoint, batchSize)
 
             return PublishEvent(
-                WeakReference(context),
+                context = context,
                 finalApiEndpoint = finalApiEndpoint,
                 eventDispatcher = eventDispatcher,
                 appFlyerId = appFlyerId,
