@@ -71,6 +71,8 @@ dependencies {
     implementation(libs.converter.gson)
     implementation(libs.logging.interceptor)
 
+    //Moshi
+    implementation(libs.converter.moshi)       // Moshi converter
 
     implementation(libs.kotlinx.serialization.json)
 
