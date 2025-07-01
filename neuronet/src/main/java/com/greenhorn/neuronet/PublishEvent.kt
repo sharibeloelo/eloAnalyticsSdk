@@ -110,6 +110,7 @@ class PublishEvent(
      */
     class Builder(private val context: Context) {
         private var apiEndpoint: String? = null
+        private var baseUrl: String? = null
         private var appFlyerId: String? = null
         private var sessionId: String? = null
         private var batchSize: Int = 10
@@ -121,6 +122,7 @@ class PublishEvent(
         private var coroutineScope: CoroutineScope =
             CoroutineScope(Dispatchers.IO + SupervisorJob())
 
+        fun setBaseUrl(baseUrl: String) = apply { this.baseUrl = baseUrl }
         fun setApiEndpoint(endpoint: String) = apply { this.apiEndpoint = endpoint }
         fun setSessionId(sessionId: String) = apply { this.sessionId = sessionId }
         fun setAppFlyerId(appFlyerId: String) = apply { this.appFlyerId = appFlyerId }
@@ -155,7 +157,7 @@ class PublishEvent(
 
             val retrofit = Retrofit.Builder()
                 .client(okHttpClient!!)
-                .baseUrl(apiEndpoint)
+                .baseUrl(baseUrl.orEmpty())
                 .addConverterFactory(MoshiConverterFactory.create())
                 .build()
 
