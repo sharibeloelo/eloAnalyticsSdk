@@ -3,6 +3,7 @@ import org.gradle.kotlin.dsl.implementation
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.ksp)
     id("maven-publish")
 }
 
@@ -80,9 +81,9 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
 
     //Room-Db
-    implementation(libs.androidx.room.ktx)
+//    implementation(libs.androidx.room.ktx)
     implementation(libs.room.runtime)
-    annotationProcessor(libs.room.compiler)
+    ksp(libs.room.compiler)
 
     implementation(libs.gson)
 }

@@ -19,11 +19,11 @@ import com.google.gson.reflect.TypeToken
 data class AnalyticsEvent(
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo("id") val id: Long = 0,
-    @ColumnInfo("event_name")  val eventName: String,
-    @ColumnInfo("is_user_login") val isUserLogin: Boolean,
-    @ColumnInfo("event_data") val payload: Map<String, Any>,
-    @ColumnInfo("time_stamp")  val timestamp: String,
-    @ColumnInfo("session_time_stamp") val sessionTimeStamp: String,
+    @ColumnInfo("eventName")  val eventName: String,
+    @ColumnInfo("isUserLogin") val isUserLogin: Boolean,
+    @ColumnInfo("payload") val payload: Map<String, Any>,
+    @ColumnInfo("timestamp")  val timestamp: String,
+    @ColumnInfo("sessionTimeStamp") val sessionTimeStamp: String,
     @ColumnInfo("isSynced") val isSynced: Boolean = false,
     @ColumnInfo("primaryId") val primaryId: String,
     @ColumnInfo("sessionId") val sessionId: String
