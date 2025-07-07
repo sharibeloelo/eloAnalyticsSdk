@@ -45,13 +45,19 @@ class EventParamsConverter {
     private val gson by lazy { Gson() }
 
     @TypeConverter
-    fun fromMap(value: String): Map<String, String> {
-        val mapType = object : TypeToken<Map<String, String>>() {}.type
+    fun toMap(value: String?): Map<String, Any>? {
+        if (value == null) {
+            return null
+        }
+        val mapType = object : TypeToken<Map<String, Any>>() {}.type
         return gson.fromJson(value, mapType)
     }
 
     @TypeConverter
-    fun toMap(map: Map<String, String>): String {
-        return gson.toJson(map)
+    fun fromMap(payload: Map<String, Any>?): String? {
+        if (payload == null) {
+            return null
+        }
+        return gson.toJson(payload)
     }
 }

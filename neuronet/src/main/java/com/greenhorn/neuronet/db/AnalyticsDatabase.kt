@@ -1,7 +1,6 @@
 package com.greenhorn.neuronet.db
 
 import android.content.Context
-import androidx.lifecycle.ViewModelProvider.NewInstanceFactory.Companion.instance
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -30,13 +29,16 @@ abstract class AnalyticsDatabase : RoomDatabase() {
         fun getInstance(context: Context): AnalyticsDatabase {
             // Multiple threads can ask for the database instance at the same time,
             // so we use synchronized to ensure only one thread can create it.
-            INSTANCE = Room.databaseBuilder(
-                context.applicationContext,
-                AnalyticsDatabase::class.java,
-                "analytics_sdk_database"
-            ).build()
-
-            return INSTANCE!!
+            return INSTANCE ?: synchronized(this) {
+                val instance = Room.databaseBuilder(
+                    context.applicationContext,
+                    AnalyticsDatabase::class.java,
+                    "analytics_sdk_database"
+                )
+                    .build()
+                INSTANCE = instance
+                instance
+            }
         }
     }
 }
