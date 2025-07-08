@@ -81,7 +81,7 @@ class PublishEvent(
         payload.put(Constant.APPS_FLYER_ID, appFlyerId.orEmpty())
 
         scope.safeLaunch({
-            val event = Event(
+            val event = AnalyticsEvent(
                 id = userId,
                 eventName = eventName,
                 isUserLogin = isUserLogin,

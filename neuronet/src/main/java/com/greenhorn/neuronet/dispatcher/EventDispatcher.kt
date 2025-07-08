@@ -1,5 +1,6 @@
 package com.greenhorn.neuronet.dispatcher
 
+import com.greenhorn.neuronet.AnalyticsEvent
 import com.greenhorn.neuronet.client.ApiClient
 import com.greenhorn.neuronet.enum.PRIORITY
 import com.greenhorn.neuronet.model.Event
@@ -44,20 +45,20 @@ class EventDispatcher(
 
     fun getBatchSizeOfEvents() = batchSize
 
-    suspend fun addEvent(event: Event) {
+    suspend fun addEvent(event: AnalyticsEvent) {
         pendingEventsMutex.withLock {
             eventRepository.insertEvent(event)
             _pendingEventCount.value = eventRepository.getEventCount()
         }
     }
 
-    suspend fun sendSingleEvent(event: Event){
+    suspend fun sendSingleEvent(event: AnalyticsEvent){
         pendingEventsMutex.withLock {
             triggerEventUpload(event)
         }
     }
 
-    private suspend fun triggerEventUpload(event: Event?) {
+    private suspend fun triggerEventUpload(event: AnalyticsEvent?) {
         pendingEventsMutex.withLock {
             if(event == null) return@withLock
             val response = eventApi.sendSingleEvents(finalApiEndpoint, event)

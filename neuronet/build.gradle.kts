@@ -69,11 +69,13 @@ dependencies {
 
     //Retrofit
     implementation(libs.retrofit)
-    implementation(libs.converter.gson)
+//    implementation(libs.converter.gson)
     implementation(libs.logging.interceptor)
 
     //Moshi
     implementation(libs.converter.moshi)       // Moshi converter
+    implementation(libs.moshi.kotlin)
+
 
     implementation(libs.kotlinx.serialization.json)
 
@@ -85,5 +87,5 @@ dependencies {
     implementation(libs.room.runtime)
     ksp(libs.room.compiler)
 
-    implementation(libs.gson)
+//    implementation(libs.gson)
 }
