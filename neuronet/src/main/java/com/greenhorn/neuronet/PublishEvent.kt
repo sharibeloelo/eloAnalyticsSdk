@@ -10,6 +10,7 @@ import com.greenhorn.neuronet.extension.safeLaunch
 import com.greenhorn.neuronet.interceptor.HttpInterceptor
 import com.greenhorn.neuronet.interceptor.RetryInterceptor
 import com.greenhorn.neuronet.listener.PublishEventListener
+import com.greenhorn.neuronet.log.Logger
 import com.greenhorn.neuronet.model.Event
 import com.greenhorn.neuronet.repository.EventRepository
 import com.greenhorn.neuronet.service.ApiService
@@ -17,7 +18,10 @@ import com.greenhorn.neuronet.worker.EventSyncWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -43,15 +47,18 @@ class PublishEvent(
     private val sessionId: String? = null,
     private val scope: CoroutineScope,
 ) : PublishEventListener {
-    private val contextRef = WeakReference(context)
+    private val contextRef by lazy { WeakReference(context) }
+    private var eventCount = 0
 
     init {
         scope.launch {
             eventDispatcher.pendingEventCount
-                .collect { count ->
-                    if (count >= eventDispatcher.getBatchSizeOfEvents()) { // Batch size
-                        println("Event count reached 10 on Android. Enqueuing work.")
-
+                .collectLatest { count ->
+                    eventCount++
+                    Logger.d("Event_Collect_Count : $eventCount")
+                    if (eventCount >= eventDispatcher.getBatchSizeOfEvents()) { // Batch size
+                        Logger.d("Event count reached 10 on Android. Enqueuing work.")
+                        eventCount = 0
                         /**
                          * Enqueues the EventSyncWorker to run in the background.
                          * It uses a unique work policy to prevent multiple workers from running simultaneously.
@@ -60,8 +67,11 @@ class PublishEvent(
                         EventSyncWorker.enqueueWork(
                             contextRef.get(),
                             eventDispatcher = eventDispatcher,
-                            finalApiEndpoint = finalApiEndpoint
-                        )
+                            finalApiEndpoint = finalApiEndpoint,
+                            scope
+                        ) {
+                            eventCount == 0
+                        }
                     }
                 }
         }
@@ -115,7 +125,7 @@ class PublishEvent(
         private var sessionId: String? = null
         private var batchSize: Int = 10
         private var headers: Map<String, String> = emptyMap()
-        private var interceptor: Interceptor = HttpInterceptor(headers)
+        private var interceptor: Interceptor ?= null
         private var loggingInterceptor: HttpLoggingInterceptor? = null
         private var okHttpClient: OkHttpClient? = null
 
@@ -136,18 +146,21 @@ class PublishEvent(
                 level =
                     if (isDebug) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
             }
+            Logger.initialize(enableLogs = isDebug)
         }
 
         fun build(): PublishEvent {
             val finalApiEndpoint = apiEndpoint
                 ?: throw IllegalStateException("API endpoint must be set before building.")
 
+            interceptor = HttpInterceptor(headers)
+
             okHttpClient = OkHttpClient.Builder()
-                .addInterceptor(interceptor)
+                .addInterceptor(interceptor!!)
                 .addInterceptor(RetryInterceptor())
                 .addInterceptor(loggingInterceptor ?: HttpLoggingInterceptor().apply {
-                    HttpLoggingInterceptor.Level.NONE
-                }
+                        level = HttpLoggingInterceptor.Level.NONE
+                    }
                 )
                 .retryOnConnectionFailure(true)
                 .connectTimeout(30, TimeUnit.SECONDS)

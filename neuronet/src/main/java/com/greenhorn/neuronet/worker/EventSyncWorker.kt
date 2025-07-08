@@ -4,21 +4,30 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.util.Log
+import androidx.lifecycle.asFlow
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.Data
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.greenhorn.neuronet.client.ApiClient
 import com.greenhorn.neuronet.db.AnalyticsDatabase
 import com.greenhorn.neuronet.dispatcher.EventDispatcher
+import com.greenhorn.neuronet.log.Logger
 import com.greenhorn.neuronet.repository.EventRepository
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.UUID
 import java.util.concurrent.TimeUnit
+import javax.net.ssl.HandshakeCompletedEvent
 
 /**
  * A CoroutineWorker that handles the background synchronization of analytics events.
@@ -31,13 +40,12 @@ class EventSyncWorker(
 ) : CoroutineWorker(appContext, workerParams) {
 
     companion object {
-        const val WORK_NAME = "com.greenhorn.neuronet.EventSyncWorker"
-        const val KEY_HAS_NETWORK = "hasNetwork"
+        const val SYNC_WORK_NAME = "event_sync_work"
         const val URL = "url"
         private var eventDispatcher: EventDispatcher?= null
 
 
-        fun enqueueWork(context: Context?, eventDispatcher : EventDispatcher, finalApiEndpoint : String) {
+        fun enqueueWork(context: Context?, eventDispatcher : EventDispatcher, finalApiEndpoint : String, scope: CoroutineScope, isCompletedEvent : () -> Unit) {
             context ?: throw IllegalStateException("Context should not be null..!")
 
             this.eventDispatcher = eventDispatcher
@@ -47,7 +55,6 @@ class EventSyncWorker(
 
             val uploadRequest = OneTimeWorkRequestBuilder<EventSyncWorker>()
                 .setConstraints(constraints)
-                .addTag(WORK_NAME)
                 .setInputData(Data.Builder().putString(URL, finalApiEndpoint).build())
                 .setBackoffCriteria(
                     BackoffPolicy.EXPONENTIAL,
@@ -56,7 +63,43 @@ class EventSyncWorker(
                 )
                 .build()
 
-            WorkManager.getInstance(context).enqueue(uploadRequest)
+            // Use enqueueUniqueWork with a policy.
+           WorkManager.getInstance(context).enqueueUniqueWork(
+                SYNC_WORK_NAME,
+                ExistingWorkPolicy.KEEP, // This is the crucial part
+                uploadRequest
+            )
+
+            val workId = uploadRequest.id
+            Logger.i("Work_Id: ${workId}")
+            observeWork(workId, context, scope, isCompletedEvent)
+        }
+
+        private fun observeWork(workId: UUID, context: Context, scope : CoroutineScope, isCompletedEvent : () -> Unit) {
+            scope.launch {
+                WorkManager.getInstance(context)
+                    .getWorkInfoByIdLiveData(workId)  // Use getWorkInfoByIdLiveData to get the LiveData object
+                    .asFlow() // Convert LiveData to Flow
+                    .collect { workInfo -> // Collect emissions from the Flow
+                        Logger.i("Work status: ${workInfo?.state}")
+                        if (workInfo != null) {
+                            when (workInfo.state) {
+                                WorkInfo.State.SUCCEEDED -> {
+                                    Logger.d("Work succeeded!")
+                                    isCompletedEvent.invoke()
+                                    // Stop collecting if the work is finished
+                                }
+                                WorkInfo.State.FAILED -> {
+                                    Logger.e("Work failed.")
+                                    // Stop collecting if the work is finished
+                                }
+                                // ... handle other states
+                                else -> Logger.i("Work status: ${workInfo.state}")
+                            }
+                        }
+                    }
+
+            }
         }
     }
 
@@ -68,18 +111,22 @@ class EventSyncWorker(
     }
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO){
-        Log.d("EventSyncWorker", "Worker started. Attempt: $runAttemptCount")
+        Logger.d("EventSyncWorker", "Worker started. Attempt: $runAttemptCount")
         try {
-            println("EventUploadWorker running...")
+            Logger.d("EventUploadWorker running...")
             val url = inputData.getString(URL) // Assume network is available if not specified
             if (!isNetworkAvailable(applicationContext)) {
-                println("No network connectivity. Retrying later.")
+                Logger.d("No network connectivity. Retrying later.")
                 return@withContext Result.retry()
             }
 
             return@withContext try {
-                eventDispatcher?.triggerEventUpload(url.orEmpty())
-                Result.success()
+                Logger.d("Url : $url")
+                val eventIsTrigger = eventDispatcher?.triggerEventUpload(url.orEmpty())
+                Logger.d("eventIsTrigger : $eventIsTrigger")
+                if (eventIsTrigger == true)
+                    Result.success()
+                else Result.retry()
             } catch (e: Exception) {
                 println("Event upload failed: ${e.message}. Retrying.")
                 Result.retry() // Implement exponential backoff for retries
