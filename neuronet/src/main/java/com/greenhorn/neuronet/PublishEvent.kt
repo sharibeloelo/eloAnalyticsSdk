@@ -89,7 +89,6 @@ class PublishEvent(
 
         scope.safeLaunch({
             val event = AnalyticsEvent(
-                id = userId,
                 eventName = eventName,
                 isUserLogin = isUserLogin,
                 payload = payload,
