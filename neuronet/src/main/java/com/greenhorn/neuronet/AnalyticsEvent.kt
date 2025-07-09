@@ -23,8 +23,6 @@ data class AnalyticsEvent(
     @ColumnInfo("timestamp")  val timestamp: String,
     @ColumnInfo("sessionTimeStamp") val sessionTimeStamp: String,
     @ColumnInfo("isSynced") val isSynced: Boolean = false,
-    @ColumnInfo("primaryId") val primaryId: String,
-    @ColumnInfo("sessionId") val sessionId: String
 )
 
 

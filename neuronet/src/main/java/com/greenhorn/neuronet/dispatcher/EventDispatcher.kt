@@ -4,7 +4,9 @@ import com.greenhorn.neuronet.AnalyticsEvent
 import com.greenhorn.neuronet.client.ApiClient
 import com.greenhorn.neuronet.enum.PRIORITY
 import com.greenhorn.neuronet.log.Logger
+import com.greenhorn.neuronet.model.EloAnalyticsEventDto
 import com.greenhorn.neuronet.model.Event
+import com.greenhorn.neuronet.model.EventMapper
 import com.greenhorn.neuronet.repository.EventRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +30,8 @@ class EventDispatcher(
 ) {
     private val pendingEventsMutex = Mutex()
     private val _pendingEventCount = MutableStateFlow(0L)
+    private var currentUserId : Long = 0L
+    private var guestUserId : Long = 0L
     val pendingEventCount: StateFlow<Long> = _pendingEventCount.asStateFlow()
 
     init {
@@ -38,8 +42,10 @@ class EventDispatcher(
 
     fun getBatchSizeOfEvents() = batchSize
 
-    suspend fun addEvent(event: AnalyticsEvent) {
+    suspend fun addEvent(event: AnalyticsEvent, currentUserId: Long, guestUserId: Long) {
         pendingEventsMutex.withLock {
+            this.currentUserId = currentUserId
+            this.guestUserId = guestUserId
             eventRepository.insertEvent(event)
             Logger.d("Event : $event")
             _pendingEventCount.value = eventRepository.getEventCount()
@@ -56,7 +62,9 @@ class EventDispatcher(
     private suspend fun triggerEventUpload(event: AnalyticsEvent?) {
         pendingEventsMutex.withLock {
             if(event == null) return@withLock
-            val response = eventApi.sendSingleEvents(finalApiEndpoint, event)
+            val response = eventApi.sendSingleEvents(finalApiEndpoint, EloAnalyticsEventDto(event.eventName,
+                event.timestamp,
+                event.timestamp, event.sessionTimeStamp, event.payload))
             if (response.isSuccessful) {
                 Logger.d("response single event send: ${response}")
                 println("Successfully uploaded event.${response}")
@@ -75,7 +83,7 @@ class EventDispatcher(
                 true // Return true as there was no failure.
             }else{
                 Logger.d("Attempting to upload ${eventsToUpload.size} events.")
-                val response = eventApi.sendEvents(url, eventsToUpload)
+                val response = eventApi.sendEvents(url, EventMapper.toEventDtos(events = eventsToUpload, currentUserId, guestUserId))
                 if (response.isSuccessful) {
                     Logger.d("Successfully uploaded and marked events as synced. : ${response.isSuccessful}")
                     val uploadedEventIds = eventsToUpload.map { it.id }

@@ -1,9 +1,12 @@
 package com.greenhorn.neuronet.client
 
 import com.greenhorn.neuronet.AnalyticsEvent
+import com.greenhorn.neuronet.extension.toEventDto
 import com.greenhorn.neuronet.extension.toMap
+import com.greenhorn.neuronet.model.EloAnalyticsEventDto
 import com.greenhorn.neuronet.service.ApiService
 import retrofit2.Response
+import kotlin.collections.map
 
 /**
  * A simple, mock API client to simulate sending events to a backend.
@@ -20,7 +23,7 @@ class ApiClient(val apiClient: ApiService){
      * @param events The list of events to send.
      * @return A boolean indicating if the call was successful.
      */
-    suspend fun sendEvents(url : String, events: List<AnalyticsEvent>) : Response<Void> {
+    suspend fun sendEvents(url : String, events: List<EloAnalyticsEventDto>) : Response<Void> {
         // In a real implementation, you would serialize the 'events' list to JSON
         // and send it as the body of a POST request.
         val eventsForApi: List<Map<String, Any>> = events.map { event ->
@@ -29,7 +32,7 @@ class ApiClient(val apiClient: ApiService){
         return apiClient.trackEvent(url, eventsForApi)
     }
 
-    suspend fun sendSingleEvents(url : String, events: AnalyticsEvent) : Response<Void> {
+    suspend fun sendSingleEvents(url : String, events: EloAnalyticsEventDto) : Response<Void> {
         // In a real implementation, you would serialize the 'events' list to JSON
         // and send it as the body of a POST request.
         return apiClient.trackEvent(url, events.toMap())

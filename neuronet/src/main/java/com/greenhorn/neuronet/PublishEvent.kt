@@ -83,24 +83,12 @@ class PublishEvent(
      * @param eventName A descriptive name for the event.
      * @param params A map of key-value pairs for additional event data.
      */
-    override suspend fun track(eventName: String, userId : Long, isUserLogin: Boolean, payload: MutableMap<String, Any>, priority: PRIORITY) {
-        val eventTs = payload[Constant.TIME_STAMP] ?: System.currentTimeMillis().toString()
-        payload[Constant.APPS_FLYER_ID] = appFlyerId.orEmpty()
-
+    override suspend fun track(payload: AnalyticsEvent, currentUserId: Long,
+                               guestUserId: Long, priority: PRIORITY) {
         scope.safeLaunch({
-            val event = AnalyticsEvent(
-                eventName = eventName,
-                isUserLogin = isUserLogin,
-                payload = payload,
-                timestamp = eventTs.toString(),
-                sessionTimeStamp = sessionId.orEmpty(),
-                primaryId = "${userId}_${eventTs}",
-                sessionId = "${userId}_${sessionId}"
-            )
-
             when(priority){
-                PRIORITY.LOW -> eventDispatcher.addEvent(event)
-                else -> eventDispatcher.sendSingleEvent(event = event)
+                PRIORITY.LOW -> eventDispatcher.addEvent(payload, currentUserId, guestUserId)
+                else -> eventDispatcher.sendSingleEvent(event = payload)
             }
         }, {})
     }
