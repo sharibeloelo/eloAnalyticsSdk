@@ -39,6 +39,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":neuronet"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -47,6 +48,7 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    implementation(libs.androidx.work.runtime.ktx)
 
-    implementation(libs.neuronet)
+//    implementation(libs.neuronet)
 }
