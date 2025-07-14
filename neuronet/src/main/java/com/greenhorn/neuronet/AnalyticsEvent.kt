@@ -4,10 +4,9 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverter
-import androidx.room.TypeConverters
-import com.greenhorn.neuronet.model.Event
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types
+import java.lang.reflect.Type
 
 
 /**
@@ -15,43 +14,44 @@ import com.google.gson.reflect.TypeToken
  * This data class is used as a Room Entity to store events locally.
  */
 @Entity(tableName = "analytics_events")
-@TypeConverters(EventParamsConverter::class)
 data class AnalyticsEvent(
     @PrimaryKey(autoGenerate = true)
-    @ColumnInfo("id") val id: Long = 0,
-    @ColumnInfo("event_name")  val eventName: String,
-    @ColumnInfo("is_user_login") val isUserLogin: Boolean,
-    @ColumnInfo("event_data") val payload: Map<String, Any>,
-    @ColumnInfo("time_stamp")  val timestamp: String,
-    @ColumnInfo("session_time_stamp") val sessionTimeStamp: String,
+    @ColumnInfo("id") val id: Long = 0L,
+    @ColumnInfo("eventName")  val eventName: String,
+    @ColumnInfo("isUserLogin") val isUserLogin: Boolean,
+    @ColumnInfo("payload") val payload: Map<String, Any>,
+    @ColumnInfo("timestamp")  val timestamp: String,
+    @ColumnInfo("sessionTimeStamp") val sessionTimeStamp: String,
     @ColumnInfo("isSynced") val isSynced: Boolean = false,
-    @ColumnInfo("primaryId") val primaryId: String,
-    @ColumnInfo("sessionId") val sessionId: String
 )
 
-fun Event.toDbEntity(): AnalyticsEvent {
-    return AnalyticsEvent(id, eventName, isUserLogin, payload, timestamp, sessionTimeStamp, isSynced, primaryId, sessionId)
-}
-
-fun AnalyticsEvent.toEvent(): Event {
-    return Event(id, eventName, isUserLogin, payload, timestamp, sessionTimeStamp, isSynced, primaryId, sessionId)
-}
 
 /**
  * Room TypeConverter to convert the event parameters Map to a JSON string and back.
  * This allows storing complex data structures in a single database column.
  */
 class EventParamsConverter {
-    private val gson by lazy { Gson() }
+    private val moshi = Moshi.Builder().build()
+
+    // Define the specific type for Map<String, Any>
+    private val mapType: Type = Types.newParameterizedType(Map::class.java, String::class.java, Object::class.java)
+
+    // Create a JsonAdapter for this specific type
+    private val adapter = moshi.adapter<Map<String, Any>>(mapType)
 
     @TypeConverter
-    fun fromMap(value: String): Map<String, String> {
-        val mapType = object : TypeToken<Map<String, String>>() {}.type
-        return gson.fromJson(value, mapType)
+    fun toMap(value: String?): Map<String, Any>? {
+        if (value == null) {
+            return null
+        }
+        return adapter.fromJson(value)
     }
 
     @TypeConverter
-    fun toMap(map: Map<String, String>): String {
-        return gson.toJson(map)
+    fun fromMap(map: Map<String, Any>?): String? {
+        if (map == null) {
+            return null
+        }
+        return adapter.toJson(map)
     }
 }

@@ -22,11 +22,11 @@
 
 # --- General SDK Public API ---
 # Keep the main SDK class, its public methods, and the Builder class so the app can access them.
--keep public class com.greenhorn.neuronet.AnalyticsSdk {
+-keep public class com.greenhorn.neuronet.PublishEvent {
     public <init>(...);
     public *;
 }
--keep public class com.greenhorn.neuronet.AnalyticsSdk$Builder {
+-keep public class com.greenhorn.neuronet.PublishEvent$Builder {
     public <init>(...);
     public *;
 }

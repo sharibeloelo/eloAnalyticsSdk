@@ -1,9 +1,7 @@
 package com.greenhorn.neuronet.repository
 
+import com.greenhorn.neuronet.AnalyticsEvent
 import com.greenhorn.neuronet.db.AnalyticsDatabase
-import com.greenhorn.neuronet.model.Event
-import com.greenhorn.neuronet.toDbEntity
-import com.greenhorn.neuronet.toEvent
 import kotlin.collections.map
 
 /**
@@ -13,12 +11,12 @@ import kotlin.collections.map
  */
 class EventRepository(private val db: AnalyticsDatabase) : EventRepositoryListener {
 
-    override suspend fun insertEvent(event: Event) {
-        db.analyticsEventDao().insertEvent(event.toDbEntity())
+    override suspend fun insertEvent(event: AnalyticsEvent) {
+        db.analyticsEventDao().insertEvent(event)
     }
 
-    override suspend fun getUnsyncedEvents(limit: Int): List<Event> {
-        return db.analyticsEventDao().getUnsyncedEvents(limit).map { it.toEvent() }
+    override suspend fun getUnsyncedEvents(limit: Int): List<AnalyticsEvent> {
+        return db.analyticsEventDao().getUnsyncedEvents(limit).map { it }
     }
 
     override suspend fun deleteSyncedEvents(eventIds: List<Long>) {

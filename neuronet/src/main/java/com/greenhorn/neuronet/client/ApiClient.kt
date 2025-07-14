@@ -1,13 +1,12 @@
 package com.greenhorn.neuronet.client
 
-import android.util.Log
-import com.google.gson.JsonArray
-import com.greenhorn.neuronet.extension.toJsonObject
-import com.greenhorn.neuronet.model.Event
+import com.greenhorn.neuronet.AnalyticsEvent
+import com.greenhorn.neuronet.extension.toEventDto
+import com.greenhorn.neuronet.extension.toMap
+import com.greenhorn.neuronet.model.EloAnalyticsEventDto
 import com.greenhorn.neuronet.service.ApiService
 import retrofit2.Response
-import retrofit2.Retrofit
-import kotlin.jvm.java
+import kotlin.collections.map
 
 /**
  * A simple, mock API client to simulate sending events to a backend.
@@ -25,22 +24,19 @@ class ApiClient(val apiClient: ApiService){
      * @param events The list of events to send.
      * @return A boolean indicating if the call was successful.
      */
-    suspend fun sendEvents(url : String, events: List<Event>) : Response<Void> {
+    suspend fun sendEvents(url : String, events: List<EloAnalyticsEventDto>) : Response<Void> {
         // In a real implementation, you would serialize the 'events' list to JSON
         // and send it as the body of a POST request.
-        val jsonArray = JsonArray()
-        events.forEach { event ->
-            jsonArray.add(event.toJsonObject())
+        val eventsForApi: List<Map<String, Any>> = events.map { event ->
+            event.toMap() // Use the new function here
         }
-        return apiClient.trackEvent(url, jsonArray)
+        return apiClient.trackEvent(url, eventsForApi)
     }
 
     //TODO: CAN MAKE OVERLOAD FUNCTION WITH DIFFERENT SIGNATURE
-    suspend fun sendSingleEvents(url : String, events: Event) : Response<Void> {
+    suspend fun sendSingleEvents(url : String, events: EloAnalyticsEventDto) : Response<Void> {
         // In a real implementation, you would serialize the 'events' list to JSON
         // and send it as the body of a POST request.
-        val jsonArray = JsonArray()
-        jsonArray.add(events.toJsonObject())
-        return apiClient.trackEvent(url, jsonArray)
+        return apiClient.trackEvent(url, events.toMap())
     }
 }

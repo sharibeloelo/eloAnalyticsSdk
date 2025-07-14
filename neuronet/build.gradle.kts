@@ -3,12 +3,13 @@ import org.gradle.kotlin.dsl.implementation
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.ksp)
     id("maven-publish")
 }
 
 android {
     namespace = "com.greenhorn.neuronet"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 24
@@ -66,10 +67,16 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
+    implementation(libs.androidx.lifecycle.livedata.ktx)
+
     //Retrofit
     implementation(libs.retrofit)
-    implementation(libs.converter.gson)
+//    implementation(libs.converter.gson)
     implementation(libs.logging.interceptor)
+
+    //Moshi
+    implementation(libs.converter.moshi)       // Moshi converter
+    implementation(libs.moshi.kotlin)
 
 
     implementation(libs.kotlinx.serialization.json)
@@ -78,9 +85,9 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
 
     //Room-Db
-    implementation(libs.androidx.room.ktx)
+//    implementation(libs.androidx.room.ktx)
     implementation(libs.room.runtime)
-    annotationProcessor(libs.room.compiler)
+    ksp(libs.room.compiler)
 
-    implementation(libs.gson)
+//    implementation(libs.gson)
 }
