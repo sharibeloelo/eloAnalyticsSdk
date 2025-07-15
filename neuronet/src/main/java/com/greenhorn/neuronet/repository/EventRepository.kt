@@ -1,8 +1,7 @@
 package com.greenhorn.neuronet.repository
 
-import com.greenhorn.neuronet.AnalyticsEvent
+import com.greenhorn.neuronet.EloAnalyticsEvent
 import com.greenhorn.neuronet.db.AnalyticsDatabase
-import kotlin.collections.map
 
 /**
  * Repository class that abstracts access to the underlying data source (Room).
@@ -11,23 +10,25 @@ import kotlin.collections.map
  */
 class EventRepository(private val db: AnalyticsDatabase) : EventRepositoryListener {
 
-    override suspend fun insertEvent(event: AnalyticsEvent) {
-        db.analyticsEventDao().insertEvent(event)
+    override suspend fun insertEvent(event: EloAnalyticsEvent) {
+//        db.analyticsEventDao().insertEvent(event)
     }
 
-    override suspend fun getUnsyncedEvents(limit: Int): List<AnalyticsEvent> {
-        return db.analyticsEventDao().getUnsyncedEvents(limit).map { it }
+    override suspend fun getUnsyncedEvents(limit: Int): List<EloAnalyticsEvent> {
+//        return db.analyticsEventDao().getUnsyncedEvents(limit).map { it }
+        return emptyList()
     }
 
     override suspend fun deleteSyncedEvents(eventIds: List<Long>) {
-        db.analyticsEventDao().markEventsAsSynced(eventIds)
+//        db.analyticsEventDao().markEventsAsSynced(eventIds)
     }
 
     override suspend fun markEventsAsSynced(eventIds: List<Long>) {
-        db.analyticsEventDao().deleteSyncedEvents(eventIds)
+//        db.analyticsEventDao().deleteSyncedEvents(eventIds)
     }
 
     override suspend fun getEventCount(): Long {
-        return db.analyticsEventDao().getEventCount()
+//        return db.analyticsEventDao().getEventCount()
+        return  0
     }
 }

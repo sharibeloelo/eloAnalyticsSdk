@@ -1,7 +1,6 @@
 package com.greenhorn.neuronet.client
 
-import com.greenhorn.neuronet.AnalyticsEvent
-import com.greenhorn.neuronet.extension.toEventDto
+import com.greenhorn.neuronet.AnalyticsSdkUtilProvider
 import com.greenhorn.neuronet.extension.toMap
 import com.greenhorn.neuronet.model.EloAnalyticsEventDto
 import com.greenhorn.neuronet.service.ApiService
@@ -14,6 +13,7 @@ import kotlin.collections.map
  *
  * @param endpoint The URL of the backend service.
  */
+//TODO: THIS SHOULD BE INJECTED VIA DI to not make it coupled in the dependent classes
 class ApiClient(val apiClient: ApiService){
     /**
      * Simulates sending a batch of events to the backend.
@@ -32,7 +32,11 @@ class ApiClient(val apiClient: ApiService){
         return apiClient.trackEvent(url, eventsForApi)
     }
 
-    suspend fun sendSingleEvents(url : String, events: EloAnalyticsEventDto) : Response<Void> {
+    suspend fun sendEventsNew(events: List<EloAnalyticsEventDto>) : Response<Any>{
+        return apiClient.sendEloAnalyticEvents(url = AnalyticsSdkUtilProvider.getApiEndPoint(),events)
+    }
+
+    suspend fun sendEvent(url : String, events: EloAnalyticsEventDto) : Response<Void> {
         // In a real implementation, you would serialize the 'events' list to JSON
         // and send it as the body of a POST request.
         return apiClient.trackEvent(url, events.toMap())

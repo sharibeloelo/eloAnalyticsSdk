@@ -15,25 +15,25 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import com.greenhorn.neuronet.client.ApiClient
-import com.greenhorn.neuronet.db.AnalyticsDatabase
 import com.greenhorn.neuronet.dispatcher.EventDispatcher
 import com.greenhorn.neuronet.log.Logger
-import com.greenhorn.neuronet.repository.EventRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
 import java.util.concurrent.TimeUnit
-import javax.net.ssl.HandshakeCompletedEvent
 
 /**
  * A CoroutineWorker that handles the background synchronization of analytics events.
  * It fetches events from the local database, sends them to the backend,
  * and handles success, failure, and retry logic.
  */
+//todo: this can be improved: Use the same logic as implemented in Eloelo, thats more performant efficient and reliable.
+// Create a single workManager and create tasks to push batches but use liveData observer to to check status of current enqueued tasks,
+// if any is enqueued or blocked dont add next one and use these enqueued or blocked to push all the data in a single api
+// Also, no need of using retry mechanism, since the task enqueing is so fast we dont need single event push for high priority events
+// Make sure to delet only after successful push. and avoid multiple fetching of db data since the data can be very large
 class EventSyncWorker(
     appContext: Context,
     workerParams: WorkerParameters
@@ -103,6 +103,7 @@ class EventSyncWorker(
         }
     }
 
+    //todo: not required
     private fun isNetworkAvailable(context: Context): Boolean {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connectivityManager.activeNetwork ?: return false
@@ -115,6 +116,7 @@ class EventSyncWorker(
         try {
             Logger.d("EventUploadWorker running...")
             val url = inputData.getString(URL) // Assume network is available if not specified
+            //todo: not required, will be handle by workManager and for logging, handle HttpException
             if (!isNetworkAvailable(applicationContext)) {
                 Logger.d("No network connectivity. Retrying later.")
                 return@withContext Result.retry()
