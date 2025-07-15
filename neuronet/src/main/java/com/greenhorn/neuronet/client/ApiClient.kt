@@ -1,5 +1,6 @@
 package com.greenhorn.neuronet.client
 
+import com.greenhorn.neuronet.AnalyticsSdkUtilProvider
 import com.greenhorn.neuronet.extension.toMap
 import com.greenhorn.neuronet.model.EloAnalyticsEventDto
 import com.greenhorn.neuronet.service.ApiService
@@ -32,7 +33,7 @@ class ApiClient(val apiClient: ApiService){
     }
 
     suspend fun sendEventsNew(events: List<EloAnalyticsEventDto>) : Response<Any>{
-        return apiClient.sendEloAnalyticEvents(events)
+        return apiClient.sendEloAnalyticEvents(url = AnalyticsSdkUtilProvider.getApiEndPoint(),events)
     }
 
     suspend fun sendEvent(url : String, events: EloAnalyticsEventDto) : Response<Void> {

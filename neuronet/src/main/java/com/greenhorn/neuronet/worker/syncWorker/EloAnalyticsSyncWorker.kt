@@ -132,7 +132,7 @@ class EloAnalyticsWorkerFactory(
             val baseUrl = checkNotNull(analyticsSdkApiData.baseUrl) { "Base URL must be set." }
             val finalApiEndpoint =
                 requireNotNull(analyticsSdkApiData.apiEndPoint) { "API endpoint must be set." }
-            AnalyticsSdkUtilProvider.setApiEndPoint(endPoint = finalApiEndpoint)
+            AnalyticsSdkUtilProvider.setApiEndPoint(endPoint = baseUrl + finalApiEndpoint)
 
             AnalyticsSdkUtilProvider
             // 2. Build dependencies in a clean, chained manner

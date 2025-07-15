@@ -67,7 +67,7 @@ fun Map<String, Any>.toStringMap(): Map<String, String> {
 
 // In SDK
 object AnalyticsSdkUtilProvider {
-    private var apiEndPoint: String? = null
+    private var apiFinalUrl: String? = null
     private var dataProvider: EloAnalyticsRuntimeProvider? = null
     private var sessionTimeStamp: String? = null
     private var userId: Long = 0L
@@ -78,11 +78,11 @@ object AnalyticsSdkUtilProvider {
     }
 
     fun setApiEndPoint(endPoint: String) {
-        apiEndPoint = endPoint
+        apiFinalUrl = endPoint
     }
 
     fun getApiEndPoint(): String {
-        return apiEndPoint.orEmpty()
+        return apiFinalUrl.orEmpty()
     }
 
     // ✅ Set and cache the session timestamp
