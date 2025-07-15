@@ -14,16 +14,34 @@ import java.lang.reflect.Type
  * This data class is used as a Room Entity to store events locally.
  */
 @Entity(tableName = "analytics_events")
-data class AnalyticsEvent(
+data class EloAnalyticsEvent(
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo("id") val id: Long = 0L,
-    @ColumnInfo("eventName")  val eventName: String,
-    @ColumnInfo("isUserLogin") val isUserLogin: Boolean,
-    @ColumnInfo("payload") val payload: Map<String, Any>,
-    @ColumnInfo("timestamp")  val timestamp: String,
-    @ColumnInfo("sessionTimeStamp") val sessionTimeStamp: String,
-    @ColumnInfo("isSynced") val isSynced: Boolean = false,
-)
+    @ColumnInfo("event_name") val eventName: String,
+    @ColumnInfo("is_user_login") val isUserLogin: Boolean,
+    @ColumnInfo("time_stamp") val eventTimestamp: String,
+    @ColumnInfo("session_time_stamp") val sessionTimeStamp: String,
+    @ColumnInfo("event_data") val eventData: Map<String, String>
+) {
+    fun logEvent(): Event {
+        return Event(
+            eventName = this.eventName,
+            eventData = this.eventData,
+            sessionTimeStamp = this.sessionTimeStamp,
+            timeStamp = this.eventTimestamp,
+            isUserLogin = this.isUserLogin
+        )
+    }
+
+    // Helper data class for logging
+    data class Event(
+        val eventName: String,
+        val eventData: Map<String, String>,
+        val sessionTimeStamp: String,
+        val timeStamp: String,
+        val isUserLogin: Boolean
+    )
+}
 
 
 /**
@@ -33,25 +51,35 @@ data class AnalyticsEvent(
 class EventParamsConverter {
     private val moshi = Moshi.Builder().build()
 
-    // Define the specific type for Map<String, Any>
-    private val mapType: Type = Types.newParameterizedType(Map::class.java, String::class.java, Object::class.java)
+    private val mapType: Type = Types.newParameterizedType(
+        Map::class.java,
+        String::class.java,
+        String::class.java
+    )
 
-    // Create a JsonAdapter for this specific type
-    private val adapter = moshi.adapter<Map<String, Any>>(mapType)
+    private val adapter = moshi.adapter<Map<String, String>>(mapType)
 
     @TypeConverter
-    fun toMap(value: String?): Map<String, Any>? {
-        if (value == null) {
-            return null
+    fun toMap(value: String?): Map<String, String>? {
+        return value?.let {
+            try {
+                adapter.fromJson(it)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
         }
-        return adapter.fromJson(value)
     }
 
     @TypeConverter
-    fun fromMap(map: Map<String, Any>?): String? {
-        if (map == null) {
-            return null
+    fun fromMap(map: Map<String, String>?): String? {
+        return map?.let {
+            try {
+                adapter.toJson(it)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
         }
-        return adapter.toJson(map)
     }
 }

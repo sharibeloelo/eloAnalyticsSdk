@@ -4,44 +4,26 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import com.greenhorn.neuronet.AnalyticsEvent
+import com.greenhorn.neuronet.EloAnalyticsEvent
 
 @Dao
-interface AnalyticsEventDao {
+interface EloAnalyticsDao {
 
-    /**
-     * Inserts a new event into the database.
-     * If there's a conflict, it replaces the existing entry.
-     */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertEvent(event: AnalyticsEvent)
+    suspend fun insertEvent(event: EloAnalyticsEvent): Long
 
-    /**
-     * Fetches a batch of events from the database.
-     * @param limit The maximum number of events to retrieve.
-     * @return A list of AnalyticsEvent.
-     */
-    //TODO: sorting rows by timeStamp in our case since, the data comes very frequently and gets pushed instantly
-    // and anyways it will be sorted in the BE and add sorting query will unnecessary increase overhead time if the table grows larger
-    @Query("SELECT * FROM analytics_events WHERE isSynced = 0 ORDER BY timestamp ASC LIMIT :limit")
-    suspend fun getUnsyncedEvents(limit: Int): List<AnalyticsEvent>
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertEvents(events: List<EloAnalyticsEvent>): List<Long>
 
+    @Query("SELECT * FROM analytics_events LIMIT :limit")
+    suspend fun getEvents(limit: Int): List<EloAnalyticsEvent>
 
-    /**
-     * Gets the total count of events currently stored in the database.
-     * @return The number of events.
-     */
-    @Query("SELECT COUNT(id) FROM analytics_events")
-    suspend fun getEventCount(): Long
+    @Query("SELECT * FROM analytics_events")
+    suspend fun getEvents(): List<EloAnalyticsEvent>
 
-    @Query("UPDATE analytics_events SET isSynced = 1 WHERE id IN (:eventIds)")
-    suspend fun markEventsAsSynced(eventIds: List<Long>)
-
-    /**
-     * Deletes a list of events from the database, identified by their IDs.
-     * @param eventIds The list of primary keys of the events to delete.
-     */
     @Query("DELETE FROM analytics_events WHERE id IN (:eventIds)")
-    suspend fun deleteSyncedEvents(eventIds: List<Long>)
+    suspend fun deleteEvents(eventIds: List<Long>): Int
 
+    @Query("SELECT COUNT(*) FROM analytics_events")
+    suspend fun getEventsCount(): Int
 }

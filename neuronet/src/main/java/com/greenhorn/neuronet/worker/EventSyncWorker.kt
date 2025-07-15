@@ -15,19 +15,14 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import com.greenhorn.neuronet.client.ApiClient
-import com.greenhorn.neuronet.db.AnalyticsDatabase
 import com.greenhorn.neuronet.dispatcher.EventDispatcher
 import com.greenhorn.neuronet.log.Logger
-import com.greenhorn.neuronet.repository.EventRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
 import java.util.concurrent.TimeUnit
-import javax.net.ssl.HandshakeCompletedEvent
 
 /**
  * A CoroutineWorker that handles the background synchronization of analytics events.

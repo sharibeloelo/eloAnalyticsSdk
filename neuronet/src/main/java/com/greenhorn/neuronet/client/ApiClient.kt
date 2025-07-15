@@ -1,7 +1,5 @@
 package com.greenhorn.neuronet.client
 
-import com.greenhorn.neuronet.AnalyticsEvent
-import com.greenhorn.neuronet.extension.toEventDto
 import com.greenhorn.neuronet.extension.toMap
 import com.greenhorn.neuronet.model.EloAnalyticsEventDto
 import com.greenhorn.neuronet.service.ApiService
@@ -33,8 +31,11 @@ class ApiClient(val apiClient: ApiService){
         return apiClient.trackEvent(url, eventsForApi)
     }
 
-    //TODO: CAN MAKE OVERLOAD FUNCTION WITH DIFFERENT SIGNATURE
-    suspend fun sendSingleEvents(url : String, events: EloAnalyticsEventDto) : Response<Void> {
+    suspend fun sendEventsNew(events: List<EloAnalyticsEventDto>) : Response<Any>{
+        return apiClient.sendEloAnalyticEvents(events)
+    }
+
+    suspend fun sendEvent(url : String, events: EloAnalyticsEventDto) : Response<Void> {
         // In a real implementation, you would serialize the 'events' list to JSON
         // and send it as the body of a POST request.
         return apiClient.trackEvent(url, events.toMap())

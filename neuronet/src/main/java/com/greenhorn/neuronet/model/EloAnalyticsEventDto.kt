@@ -7,8 +7,8 @@ data class EloAnalyticsEventDto(
     val eventTimeStamp: String,
     val primaryId: String,
     val sessionId: String,
-    val eventData: Map<String, Any>
-): Serializable {
+    val eventData: Map<String, String>
+) : Serializable {
 
     companion object {
         private const val EVENT_NAME = "ep_event_name"

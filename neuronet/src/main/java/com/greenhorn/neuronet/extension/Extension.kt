@@ -1,6 +1,5 @@
 package com.greenhorn.neuronet.extension
 
-import com.greenhorn.neuronet.AnalyticsEvent
 import com.greenhorn.neuronet.constant.Constant.EVENT_NAME
 import com.greenhorn.neuronet.constant.Constant.PRIMARY_ID
 import com.greenhorn.neuronet.constant.Constant.SESSION_ID
@@ -24,16 +23,16 @@ fun CoroutineScope.safeLaunch(
     }
 }
 
-fun AnalyticsEvent.toEventDto(guestUserId: Long, currentUserId: Long): EloAnalyticsEventDto {
-    val userId = if (this.isUserLogin) currentUserId else guestUserId
-    return EloAnalyticsEventDto(
-        eventName = this.eventName,
-        eventTimeStamp = this.timestamp,
-        primaryId = "${userId}_${this.timestamp}",
-        sessionId = "${userId}_${this.sessionTimeStamp}",
-        eventData = this.payload,
-    )
-}
+//fun AnalyticsEvent.toEventDto(guestUserId: Long, currentUserId: Long): EloAnalyticsEventDto {
+//    val userId = if (this.isUserLogin) currentUserId else guestUserId
+//    return EloAnalyticsEventDto(
+//        eventName = this.eventName,
+//        eventTimeStamp = this.timestamp,
+//        primaryId = "${userId}_${this.timestamp}",
+//        sessionId = "${userId}_${this.sessionTimeStamp}",
+//        eventData = this.payload,
+//    )
+//}
 
 fun EloAnalyticsEventDto.toMap(): Map<String, Any> {
     // Start with the main event properties in a mutable map
