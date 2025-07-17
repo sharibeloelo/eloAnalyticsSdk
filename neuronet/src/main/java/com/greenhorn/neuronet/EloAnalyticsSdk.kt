@@ -142,6 +142,7 @@ class EloAnalyticsSdk private constructor(
 
 
     fun trackEvent(name: String, eventData: MutableMap<String, Any>) {
+        Log.e(TAG, "called track event!")
         if (!runtimeProvider.isAnalyticsSdkEnabled()) return
 
         val eventTs =
@@ -265,9 +266,10 @@ class EloAnalyticsSdk private constructor(
         fun setRuntimeProvider(provider: EloAnalyticsRuntimeProvider) = apply { this.runtimeProvider = provider }
 
         fun build(): EloAnalyticsSdk {
+            Log.e(TAG, "building Instance config!")
             val finalConfig = configBuilder.build()
             if (finalConfig.endpointUrl.isBlank()) {
-                Log.w("EloAnalyticsSdk", "Warning: endpointUrl not set")
+                Log.w(TAG, "Warning: endpointUrl not set")
             }
 
             val dao = AnalyticsDatabase.getInstance(context).eloAnalyticsEventDao()
