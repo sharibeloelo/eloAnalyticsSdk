@@ -13,7 +13,7 @@ import java.lang.reflect.Type
  * Represents a single analytics event.
  * This data class is used as a Room Entity to store events locally.
  */
-@Entity(tableName = "analytics_events")
+@Entity(tableName = "analytics_sdk_events")
 data class EloAnalyticsEvent(
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo("id") val id: Long = 0L,
