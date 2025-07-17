@@ -11,6 +11,7 @@ import com.greenhorn.neuronet.db.usecase.EloAnalyticsLocalEventUseCaseImpl
 import com.greenhorn.neuronet.extension.safeLaunch
 import com.greenhorn.neuronet.listener.EloAnalyticsEventManager
 import com.greenhorn.neuronet.listener.FlushPendingEventTriggerSource
+import com.greenhorn.neuronet.log.utils.DataStoreConstants
 import com.greenhorn.neuronet.model.EloAnalyticsEventDto
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
@@ -48,14 +49,14 @@ data class EloAnalyticsConfig(
 
 // 2. Runtime Provider Interface
 interface EloAnalyticsRuntimeProvider {
-    fun isUserLoggedIn(): Boolean
+    suspend fun isUserLoggedIn(): Boolean
     fun getHeaders(): Map<String, String>
     fun getAppVersionCode(): String
     fun setSessionTimeStamp(timeStamp: String): String?
 
-    fun getCurrentUserId(): Long
+    suspend fun getCurrentUserId(key: String): Long
 
-    fun getGuestUserId(): Long
+    suspend fun getGuestUserId(key: String): Long
 
     fun isAnalyticsSdkEnabled(): Boolean
 }
@@ -102,14 +103,14 @@ object AnalyticsSdkUtilProvider {
 
     suspend fun getGuestUserId(): Long {
         if (guestUserId == 0L) {
-            guestUserId = dataProvider?.getGuestUserId() ?: 0L
+            guestUserId = dataProvider?.getGuestUserId(DataStoreConstants.GUEST_USER_ID) ?: 0L
         }
         return guestUserId
     }
 
     suspend fun getCurrentUserId(): Long {
         if (userId == 0L) {
-            userId = dataProvider?.getCurrentUserId() ?: 0
+            userId = dataProvider?.getCurrentUserId(DataStoreConstants.USER_ID) ?: 0
         }
         return userId
     }
@@ -141,7 +142,7 @@ class EloAnalytics private constructor(
     private val DEFAULT_TRIGGER_SIZE = 10
 
 
-    internal fun trackEvent(name: String, eventData: MutableMap<String, Any>) {
+    fun trackEvent(name: String, eventData: MutableMap<String, Any>) {
         if (!runtimeProvider.isAnalyticsSdkEnabled()) return
 
         val eventTs =
@@ -275,6 +276,7 @@ class EloAnalytics private constructor(
             val useCase = EloAnalyticsLocalEventUseCaseImpl(repo)
             val utils = AnalyticsSdkUtilProvider
 
+            runtimeProvider?.let { utils.initialize(provider = it) }
             val instance = EloAnalytics(
                 context = context,
                 eloAnalyticUtils = utils,

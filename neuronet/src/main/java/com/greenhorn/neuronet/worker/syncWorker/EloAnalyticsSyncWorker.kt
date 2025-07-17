@@ -134,7 +134,6 @@ class EloAnalyticsWorkerFactory(
                 requireNotNull(analyticsSdkApiData.apiEndPoint) { "API endpoint must be set." }
             AnalyticsSdkUtilProvider.setApiEndPoint(endPoint = baseUrl + finalApiEndpoint)
 
-            AnalyticsSdkUtilProvider
             // 2. Build dependencies in a clean, chained manner
             val loggingInterceptor = HttpLoggingInterceptor().apply {
                 level =
