@@ -15,15 +15,15 @@ interface EloAnalyticsDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertEvents(events: List<EloAnalyticsEvent>): List<Long>
 
-    @Query("SELECT * FROM analytics_events LIMIT :limit")
+    @Query("SELECT * FROM analytics_sdk_events LIMIT :limit")
     suspend fun getEvents(limit: Int): List<EloAnalyticsEvent>
 
-    @Query("SELECT * FROM analytics_events")
+    @Query("SELECT * FROM analytics_sdk_events")
     suspend fun getEvents(): List<EloAnalyticsEvent>
 
-    @Query("DELETE FROM analytics_events WHERE id IN (:eventIds)")
+    @Query("DELETE FROM analytics_sdk_events WHERE id IN (:eventIds)")
     suspend fun deleteEvents(eventIds: List<Long>): Int
 
-    @Query("SELECT COUNT(*) FROM analytics_events")
+    @Query("SELECT COUNT(*) FROM analytics_sdk_events")
     suspend fun getEventsCount(): Int
 }

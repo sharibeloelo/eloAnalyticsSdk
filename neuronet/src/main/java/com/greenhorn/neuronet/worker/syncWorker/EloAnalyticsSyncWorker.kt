@@ -7,7 +7,7 @@ import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.greenhorn.neuronet.AnalyticsSdkUtilProvider
-import com.greenhorn.neuronet.EloAnalytics
+import com.greenhorn.neuronet.EloAnalyticsSdk
 import com.greenhorn.neuronet.EloAnalyticsEvent
 import com.greenhorn.neuronet.client.ApiClient
 import com.greenhorn.neuronet.client.eloAnalytics.EloAnalyticsRepositoryImpl
@@ -49,7 +49,7 @@ internal class EloAnalyticsSyncWorker(
 
     override suspend fun doWork(): Result {
         Log.d(
-            EloAnalytics.TAG2,
+            EloAnalyticsSdk.TAG2,
             "ELO ANALYTICS worker started!"
         )
 
@@ -67,7 +67,7 @@ internal class EloAnalyticsSyncWorker(
 
                 if (storedPendingEvents.isEmpty()) {
                     Log.d(
-                        EloAnalytics.TAG2,
+                        EloAnalyticsSdk.TAG2,
                         "pending events are zero, so finishing worker!"
                     )
                     return@withContext Result.success()
@@ -78,7 +78,7 @@ internal class EloAnalyticsSyncWorker(
                 return@withContext Result.success()
             } catch (e: Exception) {
                 e.printStackTrace()
-                Log.e(EloAnalytics.TAG2, "exception in $TAG exception: ${e.message}")
+                Log.e(EloAnalyticsSdk.TAG2, "exception in $TAG exception: ${e.message}")
                 analyticsSdkUtilProvider.recordFirebaseNonFatal(error = e)
 
                 Result.failure()
@@ -88,7 +88,7 @@ internal class EloAnalyticsSyncWorker(
 
     private suspend fun fetchStoredEvents(): List<EloAnalyticsEvent> {
         return eloAnalyticsLocalEventUseCase.getEvents().also { storedEvents ->
-            Log.d(EloAnalytics.TAG2, "Fetched pending events count: ${storedEvents.size}")
+            Log.d(EloAnalyticsSdk.TAG2, "Fetched pending events count: ${storedEvents.size}")
         }
     }
 
@@ -101,12 +101,12 @@ internal class EloAnalyticsSyncWorker(
             )
         )
             .onSuccess {
-                Log.d(EloAnalytics.TAG2, "Successfully sent ${storedEvents.size} events to server!")
+                Log.d(EloAnalyticsSdk.TAG2, "Successfully sent ${storedEvents.size} events to server!")
                 deleteSentEvents(storedEvents)
             }
             .onFailure {
                 Log.e(
-                    EloAnalytics.TAG2,
+                    EloAnalyticsSdk.TAG2,
                     "Failed to send ${storedEvents.size} events: ${it.message}"
                 )
             }
@@ -114,7 +114,7 @@ internal class EloAnalyticsSyncWorker(
 
     private suspend fun deleteSentEvents(storedEvents: List<EloAnalyticsEvent>) {
         val deletedCount = eloAnalyticsLocalEventUseCase.deleteEvents(storedEvents.map { it.id })
-        Log.d(EloAnalytics.TAG2, "Deleted $deletedCount events from local DB after sending.")
+        Log.d(EloAnalyticsSdk.TAG2, "Deleted $deletedCount events from local DB after sending.")
     }
 }
 

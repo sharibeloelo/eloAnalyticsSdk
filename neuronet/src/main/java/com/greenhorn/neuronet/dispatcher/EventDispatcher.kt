@@ -86,7 +86,7 @@ class EventDispatcher(
 //                    Logger.d("Successfully uploaded and marked events as synced. : ${response.isSuccessful}")
 //                    val uploadedEventIds = eventsToUpload.map { it.id }
 //                    //TODO: do batching for deleting events large number events deletion can result into crash. Check implementation
-//                    // in EloAnalytics
+//                    // in EloAnalyticsSdk
 //
 //                    //TODO: WHY ARE WE deleting sync events then marking same ids synced?? if we have already deleted they wont exist,
 //                    eventRepository.markEventsAsSynced(uploadedEventIds)
