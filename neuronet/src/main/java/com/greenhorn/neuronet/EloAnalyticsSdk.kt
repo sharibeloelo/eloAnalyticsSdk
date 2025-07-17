@@ -18,7 +18,6 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import okhttp3.internal.toLongOrDefault
 import java.lang.ref.WeakReference
 
 /**
@@ -122,7 +121,7 @@ object AnalyticsSdkUtilProvider {
 }
 
 
-class EloAnalytics private constructor(
+class EloAnalyticsSdk private constructor(
     private val context: Context,
     private val eloAnalyticUtils: AnalyticsSdkUtilProvider,
     private val useCase: EloAnalyticsLocalEventUseCase,
@@ -265,10 +264,10 @@ class EloAnalytics private constructor(
         fun setConfig(block: EloAnalyticsConfigBuilder.() -> Unit) = apply { configBuilder.apply(block) }
         fun setRuntimeProvider(provider: EloAnalyticsRuntimeProvider) = apply { this.runtimeProvider = provider }
 
-        fun build(): EloAnalytics {
+        fun build(): EloAnalyticsSdk {
             val finalConfig = configBuilder.build()
             if (finalConfig.endpointUrl.isBlank()) {
-                Log.w("EloAnalytics", "Warning: endpointUrl not set")
+                Log.w("EloAnalyticsSdk", "Warning: endpointUrl not set")
             }
 
             val dao = AnalyticsDatabase.getInstance(context).eloAnalyticsEventDao()
@@ -277,7 +276,7 @@ class EloAnalytics private constructor(
             val utils = AnalyticsSdkUtilProvider
 
             runtimeProvider?.let { utils.initialize(provider = it) }
-            val instance = EloAnalytics(
+            val instance = EloAnalyticsSdk(
                 context = context,
                 eloAnalyticUtils = utils,
                 useCase = useCase,
@@ -291,7 +290,7 @@ class EloAnalytics private constructor(
     }
 
     /**
-     * Builder class for constructing an [EloAnalytics] instance.
+     * Builder class for constructing an [EloAnalyticsSdk] instance.
      */
 //    class Builder(private val context: Context) {
 //        private var baseUrl: String? = null
@@ -320,7 +319,7 @@ class EloAnalytics private constructor(
 //            Logger.initialize(enableLogs = isDebug)
 //        }
 //
-//        fun build(): EloAnalytics {
+//        fun build(): EloAnalyticsSdk {
 //            // 1. Eagerly validate required parameters
 //            checkNotNull(baseUrl) { "Base URL must be set." }
 //            val finalApiEndpoint = requireNotNull(apiEndpoint) { "API endpoint must be set." }
@@ -356,7 +355,7 @@ class EloAnalytics private constructor(
 //            val apiClient = ApiClient(apiService)
 //            val eventDispatcher = EventDispatcher(eventRepository, apiClient, finalApiEndpoint, batchSize)
 //
-//            return EloAnalytics(
+//            return EloAnalyticsSdk(
 //                context = context,
 //                finalApiEndpoint = finalApiEndpoint,
 //                eventDispatcher = eventDispatcher,
@@ -368,14 +367,14 @@ class EloAnalytics private constructor(
 //        }
 //    }
 
-    companion object {
+    companion object Companion {
         private const val TAG = "EloAnalyticsSDK"
         internal const val TAG2 = "EloAnalyticsSDKTEST"
         @Volatile
-        private var instance: EloAnalytics? = null
+        private var instance: EloAnalyticsSdk? = null
 
-        fun getInstance(): EloAnalytics {
-            return instance ?: throw IllegalStateException("EloAnalytics is not initialized")
+        fun getInstance(): EloAnalyticsSdk {
+            return instance ?: throw IllegalStateException("EloAnalyticsSdk is not initialized")
         }
     }
 }
