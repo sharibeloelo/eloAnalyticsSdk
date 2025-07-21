@@ -215,8 +215,13 @@ class EloAnalyticsSdk private constructor(
         flushPendingEventTriggerSource: FlushPendingEventTriggerSource,
         activity: Activity?
     ) {
-        Log.d(TAG2, "Flushing pending events triggered by: ${flushPendingEventTriggerSource.name}")
+       // Early return if analytics is disabled
+        if (!runtimeProvider.isAnalyticsSdkEnabled()) {
+            Log.d(TAG, "Analytics SDK is disabled, skipping flushing events!")
+            return
+        }
 
+        Log.d(TAG2, "Flushing pending events triggered by: ${flushPendingEventTriggerSource.name}")
         supervisorScope.safeLaunch(
              {
                 counterLock.withLock {

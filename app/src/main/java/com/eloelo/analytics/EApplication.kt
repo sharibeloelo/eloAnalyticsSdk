@@ -8,14 +8,17 @@ import android.app.Application
 import android.app.Application.ActivityLifecycleCallbacks
 import android.os.Bundle
 import android.util.Log
-import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.work.Configuration
 import androidx.work.DelegatingWorkerFactory
 import com.greenhorn.neuronet.EloAnalyticsSdk
-import com.greenhorn.neuronet.listener.FlushPendingEventTriggerSource
+import com.greenhorn.neuronet.constant.Constant
 import com.greenhorn.neuronet.utils.EloAnalyticsRuntimeProvider
+import com.greenhorn.neuronet.utils.FlushPendingEventTriggerSource
 import com.greenhorn.neuronet.worker.syncWorker.AnalyticsSdkApiData
 import com.greenhorn.neuronet.worker.syncWorker.AnalyticsWorkManagerInitializer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 private const val TAG = "EloEloApplication"
@@ -25,6 +28,8 @@ class EApplication : Application(), Configuration.Provider,
 
     private var activityTag: String? = null
     private var taskId: Int? = null
+
+    private val ioScope by lazy { CoroutineScope(Dispatchers.IO + SupervisorJob()) }
 
     override fun onCreate() {
         super.onCreate()
@@ -93,20 +98,14 @@ class EApplication : Application(), Configuration.Provider,
         activity: Activity
     ) {
         ioScope.launch {
-            val isEnableEloAnalytics = eloAnalyticUtils.isEnableEloAnalytics()
-
-            if (isEnableEloAnalytics) {
-                eloAnalyticsEventManager.flushPendingEvents(
-                    flushPendingEventTriggerSource,
-                    activity = activity
-                )
-            }
+            EloAnalyticsSdk.getInstance().flushPendingEvents(
+                flushPendingEventTriggerSource,
+                activity = activity
+            )
         }
     }
 
-    override fun onActivityCreated(p0: Activity, p1: Bundle?) {
-        TODO("Not yet implemented")
-    }
+    override fun onActivityCreated(p0: Activity, p1: Bundle?) {}
 
     override fun onActivityDestroyed(activity: Activity) {
         flushPendingEloAnalyticsEvents(
@@ -136,16 +135,13 @@ class EApplication : Application(), Configuration.Provider,
         Log.d(TAG, "onActivityStopped: $activity")
         if (activity.localClassName == activityTag && activity.taskId == taskId) {
             EloAnalyticsSdk.getInstance().trackEvent(
-                type = EventType.MOENGAGE,
-                eventName = AnalyticsKeyConstants.APP_MINIMISE_OR_EXITED,
-                property = emptyMap()
+                name = Constant.APP_MINIMISE_OR_EXITED,
+                eventData = mutableMapOf()
             )
             flushPendingEloAnalyticsEvents(
                 flushPendingEventTriggerSource = FlushPendingEventTriggerSource.APP_MINIMIZE,
                 activity = activity
             ) // flush events for app minimise case
-
-            socketDisconnection()
         }
     }
 }
