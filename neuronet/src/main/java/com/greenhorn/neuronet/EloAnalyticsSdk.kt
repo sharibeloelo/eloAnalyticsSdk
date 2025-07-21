@@ -1,12 +1,15 @@
 package com.greenhorn.neuronet
 
 import android.app.Activity
+import android.app.Application
 import android.content.Context
+import android.os.Bundle
 import com.greenhorn.neuronet.client.ApiClient
 import com.greenhorn.neuronet.client.ApiService
 import com.greenhorn.neuronet.client.repository.EloAnalyticsRepositoryImpl
 import com.greenhorn.neuronet.client.useCase.EloAnalyticsEventUseCase
 import com.greenhorn.neuronet.client.useCase.EloAnalyticsEventUseCaseImpl
+import com.greenhorn.neuronet.constant.Constant
 import com.greenhorn.neuronet.db.AnalyticsDatabase
 import com.greenhorn.neuronet.db.repository.EloAnalyticsLocalRepositoryImpl
 import com.greenhorn.neuronet.db.usecase.EloAnalyticsLocalEventUseCase
@@ -56,6 +59,7 @@ import java.util.concurrent.TimeUnit
  * @property config SDK configuration containing endpoint URLs, batch sizes, etc.
  * @property runtimeProvider Provider for runtime checks (user login status, SDK enabled state)
  */
+@Suppress("KDocUnresolvedReference")
 class EloAnalyticsSdk private constructor(
     private val contextRef: WeakReference<Context>,
     private val config: EloAnalyticsConfig,
@@ -82,9 +86,6 @@ class EloAnalyticsSdk private constructor(
     private var eventCounter = 0
 
     companion object {
-        private const val TAG = "EloAnalyticsSDK"
-        internal const val TAG2 = "EloAnalyticsSDK_DEBUG"
-
         @Volatile
         private var instance: EloAnalyticsSdk? = null
 
@@ -237,7 +238,7 @@ class EloAnalyticsSdk private constructor(
     ) {
         // Early return if analytics is disabled
         if (!runtimeProvider.isAnalyticsSdkEnabled()) {
-            EloSdkLogger.d(TAG, "Analytics SDK is disabled, skipping flushing events!")
+            EloSdkLogger.d("Analytics SDK is disabled, skipping flushing events!")
             return
         }
 
@@ -308,9 +309,11 @@ class EloAnalyticsSdk private constructor(
      *     .build()
      * ```
      */
-    class Builder(private val context: Context) {
+    class Builder(private val application: Application) {
         private var runtimeProvider: EloAnalyticsRuntimeProvider? = null
         private var config: EloAnalyticsConfig? = null
+
+        private val appContext = application.applicationContext
 
         /**
          * Configures the SDK using the provided configuration block.
@@ -333,6 +336,56 @@ class EloAnalyticsSdk private constructor(
             this.runtimeProvider = provider
         }
 
+        fun initActivityLifecycleCallback(application: Application) {
+            application.registerActivityLifecycleCallbacks(ActivityTracker())
+        }
+
+        private inner class ActivityTracker : Application.ActivityLifecycleCallbacks {
+            private var activityTag: String? = null
+            private var taskId: Int? = null
+
+            private fun flushPendingEloAnalyticsEvents(
+                flushPendingEventTriggerSource: FlushPendingEventTriggerSource,
+                activity: Activity
+            ) {
+                getInstance().flushPendingEvents(
+                    flushPendingEventTriggerSource,
+                    activity = activity
+                )
+            }
+
+            override fun onActivityDestroyed(activity: Activity) {
+                EloSdkLogger.d("Activity destroyed, flushing all pending events!")
+                flushPendingEloAnalyticsEvents(
+                    flushPendingEventTriggerSource = FlushPendingEventTriggerSource.ACTIVITY_DESTROY,
+                    activity = activity
+                )// flush events for activity destroyed case
+            }
+
+            override fun onActivityResumed(activity: Activity) {
+                taskId = activity.taskId
+                activityTag = activity.localClassName
+            }
+
+            override fun onActivityStopped(activity: Activity) {
+                if (activity.localClassName == activityTag && activity.taskId == taskId) {
+                    EloSdkLogger.d("App went to background or killed, flushing events!")
+                    getInstance().trackEvent(
+                        name = Constant.APP_MINIMISE_OR_EXITED,
+                        eventData = mutableMapOf()
+                    )
+                    flushPendingEloAnalyticsEvents(
+                        flushPendingEventTriggerSource = FlushPendingEventTriggerSource.APP_MINIMIZE,
+                        activity = activity
+                    ) // flush events for app minimise case
+                }
+            }
+            override fun onActivityPaused(activity: Activity) {}
+            override fun onActivityStarted(activity: Activity) {}
+            override fun onActivityCreated(p0: Activity, p1: Bundle?) {}
+            override fun onActivitySaveInstanceState(activity: Activity, p1: Bundle) {}
+        }
+
         /**
          * Builds and initializes the EloAnalyticsSdk instance.
          *
@@ -341,11 +394,14 @@ class EloAnalyticsSdk private constructor(
          */
         fun build() {
             if (isInitialized()) {
-                EloSdkLogger.w(TAG, "EloAnalyticsSdk is already initialized. Reinitializing...")
+                EloSdkLogger.w("EloAnalyticsSdk is already initialized. Reinitializing...")
             }
 
-            EloSdkLogger.d(TAG, "Building EloAnalyticsSdk instance!")
+            initActivityLifecycleCallback(application)
 
+            EloSdkLogger.d("Building EloAnalyticsSdk instance!")
+
+            val appContext = application.applicationContext
             val finalConfig =
                 requireNotNull(config) { "EloAnalyticsConfig is required. Call setConfig() before build()." }
             validateConfiguration(finalConfig)
@@ -359,7 +415,7 @@ class EloAnalyticsSdk private constructor(
             )
 
             val instance = EloAnalyticsSdk(
-                contextRef = WeakReference(context),
+                contextRef = WeakReference(appContext),
                 config = finalConfig,
                 runtimeProvider = requireNotNull(runtimeProvider) {
                     "EloAnalyticsRuntimeProvider is required. Call setRuntimeProvider() before build()."
@@ -370,7 +426,7 @@ class EloAnalyticsSdk private constructor(
 
             // Set singleton instance
             Companion.instance = instance
-            EloSdkLogger.d(TAG, "EloAnalyticsSdk instance created and initialized successfully")
+            EloSdkLogger.d("EloAnalyticsSdk instance created and initialized successfully")
         }
 
         /**
@@ -379,14 +435,12 @@ class EloAnalyticsSdk private constructor(
         private fun validateConfiguration(config: EloAnalyticsConfig) {
             if (config.baseUrl.isBlank()) {
                 EloSdkLogger.w(
-                    TAG,
                     "Base URL must be set"
                 )
             }
 
             if (config.endpointUrl.isBlank()) {
                 EloSdkLogger.w(
-                    TAG,
                     "Warning: endpointUrl not set. Events may not be synchronized to server."
                 )
             }
@@ -401,7 +455,7 @@ class EloAnalyticsSdk private constructor(
          */
         private fun createDependencies(config: EloAnalyticsConfig): EloAnalyticsDependencyContainer {
             val dao =
-                AnalyticsDatabase.getInstance(context.applicationContext).eloAnalyticsEventDao()
+                AnalyticsDatabase.getInstance(appContext).eloAnalyticsEventDao()
             val repo = EloAnalyticsLocalRepositoryImpl(dao)
             val useCase = EloAnalyticsLocalEventUseCaseImpl(repo)
             val utils = AnalyticsSdkUtilProvider
@@ -456,7 +510,7 @@ class EloAnalyticsSdk private constructor(
             val apiService = retrofit.create(ApiService::class.java)
 
             val apiClient = ApiClient(apiClient = apiService)
-            val connectivity = ConnectivityImpl(context.applicationContext)
+            val connectivity = ConnectivityImpl(appContext)
             val remoteEventRepository = EloAnalyticsRepositoryImpl(apiClient, connectivity)
             val remoteEventUseCase = EloAnalyticsEventUseCaseImpl(remoteEventRepository)
             return EloAnalyticsDependencyContainer(
