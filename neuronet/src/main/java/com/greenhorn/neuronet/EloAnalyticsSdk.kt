@@ -354,7 +354,8 @@ class EloAnalyticsSdk private constructor(
             val dependencyContainer = EloAnalyticsDependencyContainer(
                 localEventUseCase = dependencies.localEventUseCase,
                 remoteEventUseCase = dependencies.remoteEventUseCase,
-                analyticsSdkUtilProvider = dependencies.analyticsSdkUtilProvider
+                analyticsSdkUtilProvider = dependencies.analyticsSdkUtilProvider,
+                mutableHeaderProvider = dependencies.mutableHeaderProvider
             )
 
             val instance = EloAnalyticsSdk(
@@ -461,9 +462,15 @@ class EloAnalyticsSdk private constructor(
             return EloAnalyticsDependencyContainer(
                 analyticsSdkUtilProvider = utils,
                 localEventUseCase = useCase,
-                remoteEventUseCase = remoteEventUseCase
+                remoteEventUseCase = remoteEventUseCase,
+                mutableHeaderProvider = headerProvider
             )
         }
+    }
+
+    fun updateHeader(header: Map<String, String>) {
+        EloSdkLogger.d("Updating Api headers!")
+        dependencyContainer.mutableHeaderProvider.updateHeaders(newHeaders = header)
     }
 
     /**
@@ -472,6 +479,7 @@ class EloAnalyticsSdk private constructor(
     data class EloAnalyticsDependencyContainer(
         val analyticsSdkUtilProvider: AnalyticsSdkUtilProvider,
         val localEventUseCase: EloAnalyticsLocalEventUseCase,
-        val remoteEventUseCase: EloAnalyticsEventUseCase
+        val remoteEventUseCase: EloAnalyticsEventUseCase,
+        val mutableHeaderProvider: MutableHeaderProvider
     )
 }

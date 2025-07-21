@@ -43,5 +43,7 @@ class MainActivity : AppCompatActivity() {
                 "checking2" to "data2"
             )
         )
+
+        EloAnalyticsSdk.getInstance().updateHeader(mapOf("XYZ" to "@23"))
     }
 }
