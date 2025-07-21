@@ -1,8 +1,8 @@
 package com.greenhorn.neuronet.client
 
-import com.greenhorn.neuronet.AnalyticsSdkUtilProvider
 import com.greenhorn.neuronet.model.EloAnalyticsEventDto
 import com.greenhorn.neuronet.model.mapper.toJsonObject
+import com.greenhorn.neuronet.utils.AnalyticsSdkUtilProvider
 import kotlinx.serialization.json.JsonElement
 import retrofit2.Response
 

@@ -1,20 +1,18 @@
 package com.greenhorn.neuronet.utils
 
 import com.greenhorn.neuronet.constant.DataStoreConstants
-
-// 1. Config Data Class
-class EloAnalyticsConfigBuilder {
-    var batchSize: Int = 50
-    var endpointUrl: String = ""
-    var appsFlyerId: String? = null
-
-    fun build() = EloAnalyticsConfig(batchSize, endpointUrl, appsFlyerId)
-}
+import okhttp3.Interceptor
+import okhttp3.OkHttpClient
 
 data class EloAnalyticsConfig(
-    val batchSize: Int?,
+    val batchSize: Int = 10,
+    val baseUrl: String,
     val endpointUrl: String,
-    val appsFlyerId: String?
+    val isDebug: Boolean = false,
+    val appsFlyerId: String? = null,
+    val headers: Map<String, String> = emptyMap(),
+    val customOkHttpClient: OkHttpClient? = null,
+    val customInterceptor: Interceptor? = null
 )
 
 enum class FlushPendingEventTriggerSource {
@@ -79,7 +77,6 @@ object AnalyticsSdkUtilProvider {
 
 // 2. Runtime Provider Interface
 interface EloAnalyticsRuntimeProvider {
-    fun getHeaders(): Map<String, String>
     fun getAppVersionCode(): String
     suspend fun isUserLoggedIn(): Boolean
 

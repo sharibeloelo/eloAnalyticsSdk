@@ -5,8 +5,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import com.greenhorn.neuronet.AnalyticsSdkUtilProvider
 import com.greenhorn.neuronet.EloAnalyticsSdk
+import com.greenhorn.neuronet.utils.AnalyticsSdkUtilProvider
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -23,6 +23,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         AnalyticsSdkUtilProvider.updateSessionTimeStampAndCache(System.currentTimeMillis().toString())
+
         EloAnalyticsSdk.getInstance().trackEvent(
             name = "TEST_EVENT_ON_RESUME",
             eventData = mutableMapOf(

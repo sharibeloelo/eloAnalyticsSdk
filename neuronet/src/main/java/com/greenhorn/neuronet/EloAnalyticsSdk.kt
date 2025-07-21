@@ -2,28 +2,43 @@ package com.greenhorn.neuronet
 
 import android.app.Activity
 import android.content.Context
-import android.util.Log
+import com.greenhorn.neuronet.client.ApiClient
+import com.greenhorn.neuronet.client.ApiService
+import com.greenhorn.neuronet.client.repository.EloAnalyticsRepositoryImpl
+import com.greenhorn.neuronet.client.useCase.EloAnalyticsEventUseCase
+import com.greenhorn.neuronet.client.useCase.EloAnalyticsEventUseCaseImpl
 import com.greenhorn.neuronet.db.AnalyticsDatabase
 import com.greenhorn.neuronet.db.repository.EloAnalyticsLocalRepositoryImpl
 import com.greenhorn.neuronet.db.usecase.EloAnalyticsLocalEventUseCase
 import com.greenhorn.neuronet.db.usecase.EloAnalyticsLocalEventUseCaseImpl
 import com.greenhorn.neuronet.extension.safeLaunch
+import com.greenhorn.neuronet.header.MutableHeaderProvider
+import com.greenhorn.neuronet.interceptor.HttpInterceptor
+import com.greenhorn.neuronet.interceptor.RetryInterceptor
 import com.greenhorn.neuronet.listener.EloAnalyticsEventManager
 import com.greenhorn.neuronet.model.EloAnalyticsEvent
 import com.greenhorn.neuronet.model.EloAnalyticsEventDto
 import com.greenhorn.neuronet.model.mapper.toStringMap
 import com.greenhorn.neuronet.utils.AnalyticsSdkUtilProvider
+import com.greenhorn.neuronet.utils.ConnectivityImpl
 import com.greenhorn.neuronet.utils.EloAnalyticsConfig
-import com.greenhorn.neuronet.utils.EloAnalyticsConfigBuilder
 import com.greenhorn.neuronet.utils.EloAnalyticsRuntimeProvider
+import com.greenhorn.neuronet.utils.EloSdkLogger
 import com.greenhorn.neuronet.utils.FlushPendingEventTriggerSource
 import com.greenhorn.neuronet.worker.syncWorker.EloAnalyticsWorkerUtils
+import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
 import java.lang.ref.WeakReference
+import java.util.concurrent.TimeUnit
 
 /**
  * Main Analytics SDK class responsible for tracking, batching, and synchronizing analytics events.
@@ -34,27 +49,31 @@ import java.lang.ref.WeakReference
  * - Handle offline scenarios by storing events in local database
  * - Automatically flush events based on batch size or manual triggers
  *
- * @property context Application context (stored as weak reference to prevent memory leaks)
+ * @property contextRef Weak reference to the application context to prevent memory leaks.
+ * Used for enqueuing WorkManager jobs safely across the SDK.
  * @property eloAnalyticUtils Utility provider for SDK operations
  * @property useCase Use case for local event database operations
  * @property config SDK configuration containing endpoint URLs, batch sizes, etc.
  * @property runtimeProvider Provider for runtime checks (user login status, SDK enabled state)
  */
 class EloAnalyticsSdk private constructor(
-    private val context: Context,
-    private val eloAnalyticUtils: AnalyticsSdkUtilProvider,
-    private val useCase: EloAnalyticsLocalEventUseCase,
+    private val contextRef: WeakReference<Context>,
     private val config: EloAnalyticsConfig,
-    private val runtimeProvider: EloAnalyticsRuntimeProvider
+    private val runtimeProvider: EloAnalyticsRuntimeProvider,
 ) : EloAnalyticsEventManager {
 
-    // Weak reference to prevent memory leaks
-    private val contextRef by lazy { WeakReference(context) }
 
     // Coroutine scope for async operations with IO dispatcher and SupervisorJob for error isolation
     private val supervisorScope by lazy {
         CoroutineScope(IO + SupervisorJob())
     }
+
+    private lateinit var dependencyContainer: EloAnalyticsDependencyContainer
+    fun getDependencyContainer(): EloAnalyticsDependencyContainer = dependencyContainer
+    fun setDependencyContainer(dependencies: EloAnalyticsDependencyContainer) {
+        dependencyContainer = dependencies
+    }
+
 
     // Thread-safe counter for tracking events before batch flush
     private val counterLock by lazy { Mutex() }
@@ -64,8 +83,7 @@ class EloAnalyticsSdk private constructor(
 
     companion object {
         private const val TAG = "EloAnalyticsSDK"
-        internal const val TAG2 = "EloAnalyticsSDKTEST"
-        private const val DEFAULT_TRIGGER_SIZE = 10
+        internal const val TAG2 = "EloAnalyticsSDK_DEBUG"
 
         @Volatile
         private var instance: EloAnalyticsSdk? = null
@@ -77,9 +95,11 @@ class EloAnalyticsSdk private constructor(
          * @throws IllegalStateException if SDK is not initialized
          */
         fun getInstance(): EloAnalyticsSdk {
-            return instance ?: throw IllegalStateException(
-                "EloAnalyticsSdk is not initialized. Please call EloAnalyticsSdk.Builder(context).build() first."
-            )
+            return instance ?: synchronized(this) {
+                instance ?: throw IllegalStateException(
+                    "EloAnalyticsSdk is not initialized. Call Builder.build() first."
+                )
+            }
         }
 
         /**
@@ -103,11 +123,11 @@ class EloAnalyticsSdk private constructor(
      * @param eventData Mutable map containing event data and properties
      */
     fun trackEvent(name: String, eventData: MutableMap<String, Any>) {
-        Log.d(TAG, "trackEvent called: $name")
+        EloSdkLogger.d("[trackEvent] name=$name")
 
         // Early return if analytics is disabled
         if (!runtimeProvider.isAnalyticsSdkEnabled()) {
-            Log.d(TAG, "Analytics SDK is disabled, skipping event: $name")
+            EloSdkLogger.d("Analytics SDK is disabled, skipping event: $name")
             return
         }
 
@@ -121,7 +141,7 @@ class EloAnalyticsSdk private constructor(
         supervisorScope.safeLaunch(
             {
                 val event = createAnalyticsEvent(name, eventTimestamp, eventData)
-                Log.d(TAG, "Created event: ${event.logEvent()}")
+                EloSdkLogger.d("Created event: ${event.logEvent()}")
                 insertEventAndIncrementCounter(event)
             },
             { throwable ->
@@ -142,7 +162,7 @@ class EloAnalyticsSdk private constructor(
             eventName = name,
             isUserLogin = runtimeProvider.isUserLoggedIn(),
             eventTimestamp = timestamp,
-            sessionTimeStamp = eloAnalyticUtils.getSessionTimeStamp(),
+            sessionTimeStamp = dependencyContainer.analyticsSdkUtilProvider.getSessionTimeStamp(),
             eventData = eventData.toStringMap()
         )
     }
@@ -152,8 +172,8 @@ class EloAnalyticsSdk private constructor(
      */
     private fun handleTrackingError(throwable: Throwable, eventName: String) {
         throwable.printStackTrace()
-        Log.e(TAG2, "Error tracking event '$eventName': ${throwable.message}")
-        eloAnalyticUtils.recordFirebaseNonFatal(error = throwable)
+        EloSdkLogger.e("Error tracking event '$eventName': ${throwable.message}", throwable)
+        dependencyContainer.analyticsSdkUtilProvider.recordFirebaseNonFatal(error = throwable)
     }
 
     /**
@@ -162,15 +182,15 @@ class EloAnalyticsSdk private constructor(
      * @param event The event to insert into the database
      */
     private suspend fun insertEventAndIncrementCounter(event: EloAnalyticsEvent) {
-        Log.d(TAG2, "Inserting event '${event.eventName}' into database")
+        EloSdkLogger.d("Inserting event '${event.eventName}' into database")
 
-        val isInserted = useCase.insertEvent(event)
-        Log.d(TAG2, "Event '${event.eventName}' insertion result: $isInserted")
+        val isInserted = dependencyContainer.localEventUseCase.insertEvent(event)
+        EloSdkLogger.d("Event '${event.eventName}' insertion result: $isInserted")
 
         if (isInserted >= 0L) {
             incrementCounterAndCheckBatch()
         } else {
-            Log.w(TAG2, "Failed to insert event '${event.eventName}' into database")
+            EloSdkLogger.w("Failed to insert event '${event.eventName}' into database")
         }
     }
 
@@ -182,12 +202,12 @@ class EloAnalyticsSdk private constructor(
         try {
             counterLock.withLock {
                 eventCounter++
-                val triggerCountSize = config.batchSize ?: DEFAULT_TRIGGER_SIZE
+                val triggerCountSize = config.batchSize
 
-                Log.d(TAG2, "Event counter: $eventCounter, Batch size: $triggerCountSize")
+                EloSdkLogger.d("Event counter: $eventCounter, Batch size: $triggerCountSize")
 
                 if (eventCounter >= triggerCountSize) {
-                    Log.d(TAG2, "Batch size reached, triggering flush")
+                    EloSdkLogger.d("Batch size reached, triggering flush")
                     flushPendingEvents(
                         flushPendingEventTriggerSource = FlushPendingEventTriggerSource.EVENT_BATCH_COUNT_COMPLETE
                     )
@@ -195,8 +215,8 @@ class EloAnalyticsSdk private constructor(
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            Log.e(TAG2, "Error in incrementCounterAndCheckBatch: ${e.message}")
-            eloAnalyticUtils.recordFirebaseNonFatal(error = e)
+            EloSdkLogger.e("Error in incrementCounterAndCheckBatch: ${e.message}")
+            dependencyContainer.analyticsSdkUtilProvider.recordFirebaseNonFatal(error = e)
         }
     }
 
@@ -215,15 +235,15 @@ class EloAnalyticsSdk private constructor(
         flushPendingEventTriggerSource: FlushPendingEventTriggerSource,
         activity: Activity?
     ) {
-       // Early return if analytics is disabled
+        // Early return if analytics is disabled
         if (!runtimeProvider.isAnalyticsSdkEnabled()) {
-            Log.d(TAG, "Analytics SDK is disabled, skipping flushing events!")
+            EloSdkLogger.d(TAG, "Analytics SDK is disabled, skipping flushing events!")
             return
         }
 
-        Log.d(TAG2, "Flushing pending events triggered by: ${flushPendingEventTriggerSource.name}")
+        EloSdkLogger.d("Flushing pending events triggered by: ${flushPendingEventTriggerSource.name}")
         supervisorScope.safeLaunch(
-             {
+            {
                 counterLock.withLock {
                     val shouldFlush = shouldProceedWithFlush()
                     if (!shouldFlush) return@safeLaunch
@@ -233,8 +253,8 @@ class EloAnalyticsSdk private constructor(
             },
             { throwable ->
                 throwable.printStackTrace()
-                Log.e(TAG2, "Error in flushPendingEvents: ${throwable.message}")
-                eloAnalyticUtils.recordFirebaseNonFatal(error = throwable)
+                EloSdkLogger.e("Error in flushPendingEvents: ${throwable.message}")
+                dependencyContainer.analyticsSdkUtilProvider.recordFirebaseNonFatal(error = throwable)
             }
         )
     }
@@ -244,17 +264,17 @@ class EloAnalyticsSdk private constructor(
      */
     private suspend fun shouldProceedWithFlush(): Boolean {
         if (eventCounter > 0) {
-            Log.d(TAG2, "Counter is $eventCounter, proceeding with flush")
+            EloSdkLogger.d("Counter is $eventCounter, proceeding with flush")
             return true
         }
 
-        val pendingEventsCount = useCase.getEventsCount()
+        val pendingEventsCount = dependencyContainer.localEventUseCase.getEventsCount()
         val hasPendingEvents = pendingEventsCount > 0
 
-        Log.d(TAG2, "Counter is 0, checking database. Pending events: $pendingEventsCount")
+        EloSdkLogger.d("Counter is 0, checking database. Pending events: $pendingEventsCount")
 
         if (!hasPendingEvents) {
-            Log.d(TAG2, "No pending events found, skipping flush")
+            EloSdkLogger.d("No pending events found, skipping flush")
         }
 
         return hasPendingEvents
@@ -265,12 +285,12 @@ class EloAnalyticsSdk private constructor(
      */
     private suspend fun resetCounterAndEnqueueWork() {
         eventCounter = 0
-        Log.d(TAG2, "Event counter reset to 0")
+        EloSdkLogger.d("Event counter reset to 0")
 
         contextRef.get()?.let { context ->
-            Log.d(TAG2, "Enqueuing analytics work request")
+            EloSdkLogger.d("Enqueuing analytics work request")
             EloAnalyticsWorkerUtils.enqueueAnalyticEventsWorkRequest(context)
-        } ?: Log.w(TAG2, "Context reference is null, cannot enqueue work request")
+        } ?: EloSdkLogger.w("Context reference is null, cannot enqueue work request")
     }
 
     /**
@@ -290,7 +310,7 @@ class EloAnalyticsSdk private constructor(
      */
     class Builder(private val context: Context) {
         private var runtimeProvider: EloAnalyticsRuntimeProvider? = null
-        private var configBuilder: EloAnalyticsConfigBuilder = EloAnalyticsConfigBuilder()
+        private var config: EloAnalyticsConfig? = null
 
         /**
          * Configures the SDK using the provided configuration block.
@@ -298,9 +318,10 @@ class EloAnalyticsSdk private constructor(
          * @param block Configuration block for setting up SDK parameters
          * @return Builder instance for method chaining
          */
-        fun setConfig(block: EloAnalyticsConfigBuilder.() -> Unit) = apply {
-            configBuilder.apply(block)
+        fun setConfig(config: EloAnalyticsConfig) = apply {
+            this.config = config
         }
+
 
         /**
          * Sets the runtime provider for checking SDK state and user login status.
@@ -318,69 +339,139 @@ class EloAnalyticsSdk private constructor(
          * @return Configured SDK instance
          * @throws IllegalArgumentException if required parameters are missing
          */
-        fun build(): EloAnalyticsSdk {
-            Log.d(TAG, "Building EloAnalyticsSdk instance")
+        fun build() {
+            if (isInitialized()) {
+                EloSdkLogger.w(TAG, "EloAnalyticsSdk is already initialized. Reinitializing...")
+            }
 
-            val finalConfig = configBuilder.build()
+            EloSdkLogger.d(TAG, "Building EloAnalyticsSdk instance!")
+
+            val finalConfig =
+                requireNotNull(config) { "EloAnalyticsConfig is required. Call setConfig() before build()." }
             validateConfiguration(finalConfig)
 
             val dependencies = createDependencies(finalConfig)
+            val dependencyContainer = EloAnalyticsDependencyContainer(
+                localEventUseCase = dependencies.localEventUseCase,
+                remoteEventUseCase = dependencies.remoteEventUseCase,
+                analyticsSdkUtilProvider = dependencies.analyticsSdkUtilProvider
+            )
 
             val instance = EloAnalyticsSdk(
-                context = context,
-                eloAnalyticUtils = dependencies.utils,
-                useCase = dependencies.useCase,
+                contextRef = WeakReference(context),
                 config = finalConfig,
                 runtimeProvider = requireNotNull(runtimeProvider) {
                     "EloAnalyticsRuntimeProvider is required. Call setRuntimeProvider() before build()."
                 }
             )
 
+            instance.setDependencyContainer(dependencies = dependencyContainer)
+
             // Set singleton instance
             Companion.instance = instance
-            Log.d(TAG, "EloAnalyticsSdk instance created and initialized successfully")
-
-            return instance
+            EloSdkLogger.d(TAG, "EloAnalyticsSdk instance created and initialized successfully")
         }
 
         /**
          * Validates the configuration parameters.
          */
         private fun validateConfiguration(config: EloAnalyticsConfig) {
+            if (config.baseUrl.isBlank()) {
+                EloSdkLogger.w(
+                    TAG,
+                    "Base URL must be set"
+                )
+            }
+
             if (config.endpointUrl.isBlank()) {
-                Log.w(
+                EloSdkLogger.w(
                     TAG,
                     "Warning: endpointUrl not set. Events may not be synchronized to server."
                 )
             }
 
-            config.batchSize?.let { batchSize ->
-                if (batchSize <= 0) {
-                    throw IllegalArgumentException("Batch size must be greater than 0")
-                }
+            if (config.batchSize <= 0) {
+                throw IllegalArgumentException("Batch size must be greater than 0")
             }
         }
 
         /**
          * Creates the required dependencies for the SDK.
          */
-        private fun createDependencies(config: EloAnalyticsConfig): Dependencies {
-            val dao = AnalyticsDatabase.getInstance(context).eloAnalyticsEventDao()
+        private fun createDependencies(config: EloAnalyticsConfig): EloAnalyticsDependencyContainer {
+            val dao =
+                AnalyticsDatabase.getInstance(context.applicationContext).eloAnalyticsEventDao()
             val repo = EloAnalyticsLocalRepositoryImpl(dao)
             val useCase = EloAnalyticsLocalEventUseCaseImpl(repo)
             val utils = AnalyticsSdkUtilProvider
 
             runtimeProvider?.let { utils.initialize(provider = it) }
 
-            return Dependencies(utils, useCase)
-        }
+            val json = Json {
+                prettyPrint = true
+                isLenient = true
+                ignoreUnknownKeys = true
+                encodeDefaults = true
+                coerceInputValues = true
+            }
 
-        /**
-         * Data class to hold SDK dependencies.
-         */
-        private data class Dependencies(
-            val utils: AnalyticsSdkUtilProvider,
-            val useCase: EloAnalyticsLocalEventUseCase
-        )
+
+            val baseUrl = checkNotNull(config.baseUrl) { "Base URL must be set." }
+            val finalApiEndpoint =
+                requireNotNull(config.endpointUrl) { "API endpoint must be set." }
+            AnalyticsSdkUtilProvider.setApiEndPoint(endPoint = baseUrl + finalApiEndpoint)
+
+            EloSdkLogger.init(debug = config.isDebug)
+            // 2. Build dependencies in a clean, chained manner
+            val loggingInterceptor = HttpLoggingInterceptor().apply {
+                level =
+                    if (config.isDebug) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
+            }
+
+            val contentType by lazy { "application/json".toMediaType() }
+
+            val headerProvider = MutableHeaderProvider(config.headers)
+            // Use a custom OkHttpClient if provided, otherwise build a default one.
+            val finalOkHttpClient = config.customOkHttpClient ?: OkHttpClient.Builder()
+                .addInterceptor(
+                    config.customInterceptor ?: HttpInterceptor(
+                        headerProvider
+                    )
+                )
+                .addInterceptor(RetryInterceptor())
+                .addInterceptor(loggingInterceptor)
+                .retryOnConnectionFailure(true)
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
+                .build()
+
+            val retrofit = Retrofit.Builder()
+                .baseUrl(baseUrl)
+                .client(finalOkHttpClient)
+                .addConverterFactory(json.asConverterFactory(contentType))
+                .build()
+
+            val apiService = retrofit.create(ApiService::class.java)
+
+            val apiClient = ApiClient(apiClient = apiService)
+            val connectivity = ConnectivityImpl(context.applicationContext)
+            val remoteEventRepository = EloAnalyticsRepositoryImpl(apiClient, connectivity)
+            val remoteEventUseCase = EloAnalyticsEventUseCaseImpl(remoteEventRepository)
+            return EloAnalyticsDependencyContainer(
+                analyticsSdkUtilProvider = utils,
+                localEventUseCase = useCase,
+                remoteEventUseCase = remoteEventUseCase
+            )
+        }
     }
+
+    /**
+     * Data class to hold SDK dependencies.
+     */
+    data class EloAnalyticsDependencyContainer(
+        val analyticsSdkUtilProvider: AnalyticsSdkUtilProvider,
+        val localEventUseCase: EloAnalyticsLocalEventUseCase,
+        val remoteEventUseCase: EloAnalyticsEventUseCase
+    )
 }

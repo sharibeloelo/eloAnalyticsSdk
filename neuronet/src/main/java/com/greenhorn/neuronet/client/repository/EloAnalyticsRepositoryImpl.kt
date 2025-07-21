@@ -9,6 +9,7 @@ import com.greenhorn.neuronet.utils.NetworkResult
 import com.greenhorn.neuronet.utils.Result
 import com.greenhorn.neuronet.utils.Success
 import com.greenhorn.neuronet.model.EloAnalyticsEventDto
+import com.greenhorn.neuronet.utils.EloSdkLogger
 
 private const val TAG = "EloAnalyticsRepositoryImpl"
 class EloAnalyticsRepositoryImpl(
@@ -37,7 +38,7 @@ class EloAnalyticsRepositoryImpl(
             }
         } catch (error: Exception) {
             error.printStackTrace()
-            Log.e(TAG, "Error in sendEloAnalyticEvents error: ${error.message}")
+            EloSdkLogger.e( "Error in sendEloAnalyticEvents error: ${error.message}")
             Failure(
                 errorResponse = createExceptionResponse(e = error)
             )
