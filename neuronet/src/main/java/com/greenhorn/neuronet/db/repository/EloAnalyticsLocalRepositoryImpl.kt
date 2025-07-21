@@ -1,9 +1,9 @@
 package com.greenhorn.neuronet.db.repository
 
-import com.greenhorn.neuronet.EloAnalyticsEvent
-import com.greenhorn.neuronet.db.EloAnalyticsDao
+import com.greenhorn.neuronet.model.EloAnalyticsEvent
+import com.greenhorn.neuronet.db.dao.EloAnalyticsDao
 
-class EloAnalyticsLocalRepositoryImpl(private val dao: EloAnalyticsDao) :
+internal class EloAnalyticsLocalRepositoryImpl(private val dao: EloAnalyticsDao) :
     EloAnalyticsLocalRepository {
     override suspend fun insertEvent(data: EloAnalyticsEvent): Long = dao.insertEvent(data)
 

@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Analytics</string>
+    <string name="update_api_headers">Update Api Headers</string>
 </resources>

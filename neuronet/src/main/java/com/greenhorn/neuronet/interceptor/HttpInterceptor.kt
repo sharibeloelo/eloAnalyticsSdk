@@ -4,7 +4,7 @@ import com.greenhorn.neuronet.listener.HeaderProvider
 import okhttp3.Interceptor
 import okhttp3.Response
 
-class HttpInterceptor(private val headerProvider: HeaderProvider) : Interceptor {
+internal class HttpInterceptor(private val headerProvider: HeaderProvider) : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()

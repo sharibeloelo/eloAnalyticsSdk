@@ -1,58 +1,75 @@
-package com.greenhorn.neuronet.log.utils
+package com.greenhorn.neuronet.utils
 
-import com.squareup.moshi.Moshi
+import kotlinx.serialization.json.Json
 import retrofit2.Response
 import java.io.IOException
 import java.net.SocketTimeoutException
 
-const val CODE_200 = 200
-const val CODE_201 = 201
+private const val CODE_200 = 200
+private const val CODE_201 = 201
 private const val CODE_600_ANDROID = 600
 private const val CODE_503_NO_INTERNET = 503
 
 private const val NO_INTERNET = "No Internet Connection!"
 
-open class BaseRepository {
+internal open class BaseRepository {
 
     private val TAG = "BaseRepository"
     var message = ""
+    private val json by lazy {
+        Json {
+            prettyPrint = true
+            isLenient = true
+            ignoreUnknownKeys = true
+            encodeDefaults = true
+            coerceInputValues = true
+        }
+    }
 
-    private val moshi by lazy { Moshi.Builder().build() }
-    private val errorAdapter by lazy { moshi.adapter(ErrorResponse::class.java) }
+    private inline fun <reified T> decodeJson(jsonString: String): T? {
+        return try {
+            json.decodeFromString<T>(jsonString)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
 
     suspend fun <T : Any> doNetworkCall(
         networkCall: suspend () -> Response<T>
     ): NetworkResult<T> {
         val networkResponse: NetworkResponse<T> = invokeNetworkCall(networkCall)
-
         if (networkResponse is NetworkResponse.Success) {
             val response = networkResponse.response
             return if (response.code() == CODE_200 || response.code() == CODE_201) {
-                NetworkResult.Success(response.body(), response.headers())
+                if (response.body() is DataSessionWrapper<*>) {
+                    NetworkResult.Success(response.body(), response.headers())
+                } else
+                    NetworkResult.Success(response.body(), response.headers())
             } else {
                 NetworkResult.Failure(response.message(), response.code())
             }
         } else if (networkResponse is NetworkResponse.Failure) {
             try {
-                if (!networkResponse.errorBody.isNullOrEmpty()) {
-                    message = errorAdapter.fromJson(networkResponse.errorBody ?: "")?.message.orEmpty()
+                if (networkResponse.errorBody.isNullOrEmpty().not()) {
+                    decodeJson<ErrorResponse>(networkResponse.errorBody.orEmpty())?.let {
+                        message = it.message.orEmpty()
+                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
-
         try {
-            if (networkResponse.toString().contains("path") && networkResponse.toString()
+            if (networkResponse.toString().split("path").isNotEmpty() && networkResponse.toString()
                     .split("path").getOrNull(1).orEmpty().contains("otp/send")
             ) {
-                val mesg = networkResponse.toString()
-                    .split("message").getOrNull(1).orEmpty()
-                    .split("Exception: ").getOrNull(1)
+                val mesg = networkResponse.toString().split("message").getOrNull(1).orEmpty().split("Exception: ").getOrNull(1)
                 message = mesg.orEmpty().split(",").getOrNull(0).orEmpty()
             }
         } catch (e: Exception) {
             e.printStackTrace()
+//            message = "BaseRepository: ${e.message}"
         }
 
         return NetworkResult.HttpFailure(
@@ -121,3 +138,16 @@ open class BaseRepository {
         )
     }
 }
+
+data class DataSessionWrapper<T>(
+    val content: List<T>,
+    val empty: Boolean,
+    val first: Boolean,
+    val last: Boolean,
+    val number: Int,
+    val numberOfElements: Int,
+    val size: Int,
+    val totalElements: Int,
+    val totalPages: Int
+)
+

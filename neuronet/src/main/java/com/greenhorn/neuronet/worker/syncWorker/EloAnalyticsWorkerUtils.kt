@@ -1,7 +1,6 @@
 package com.greenhorn.neuronet.worker.syncWorker
 
 import android.content.Context
-import android.util.Log
 import androidx.annotation.MainThread
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
@@ -11,12 +10,11 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
-import com.greenhorn.neuronet.EloAnalyticsSdk
+import com.greenhorn.neuronet.utils.EloSdkLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 internal object EloAnalyticsWorkerUtils {
-    private const val TAG = "EloAnalyticsWorkerUtils"
     private const val ELO_ANALYTICS_WORKER = "ELO_ANALYTICS_WORKER"
 
     private lateinit var workManager: WorkManager
@@ -51,7 +49,7 @@ internal object EloAnalyticsWorkerUtils {
                         handleWorkInfos(workInfos)
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        Log.e(EloAnalyticsSdk.TAG2, "Error handling work infos: ${e.message}", e)
+                        EloSdkLogger.e(message = "Error handling work infos: ${e.message}", throwable =  e)
                     }
                 }
                 workInfoObserver = WorkInfoObserver(liveData, observer)
@@ -77,13 +75,11 @@ internal object EloAnalyticsWorkerUtils {
                 workRequest
             )
 
-            Log.d(
-                EloAnalyticsSdk.TAG2,
+            EloSdkLogger.d(
                 "Enqueued work request for $ELO_ANALYTICS_WORKER with ID: ${workRequest.id}"
             )
         } else {
-            Log.d(
-                EloAnalyticsSdk.TAG2,
+            EloSdkLogger.d(
                 "Work request for $ELO_ANALYTICS_WORKER is already blocked or enqueued."
             )
         }

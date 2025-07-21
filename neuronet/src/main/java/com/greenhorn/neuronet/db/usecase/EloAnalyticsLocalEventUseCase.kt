@@ -1,8 +1,8 @@
 package com.greenhorn.neuronet.db.usecase
 
-import com.greenhorn.neuronet.EloAnalyticsEvent
+import com.greenhorn.neuronet.model.EloAnalyticsEvent
 
-interface EloAnalyticsLocalEventUseCase {
+internal interface EloAnalyticsLocalEventUseCase {
     suspend fun insertEvent(data: EloAnalyticsEvent): Long
 
     suspend fun insertEvents(data: List<EloAnalyticsEvent>): List<Long>

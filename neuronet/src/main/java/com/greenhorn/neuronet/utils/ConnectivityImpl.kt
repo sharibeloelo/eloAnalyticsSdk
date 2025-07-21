@@ -1,10 +1,14 @@
-package com.greenhorn.neuronet.log.utils
+package com.greenhorn.neuronet.utils
 
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 
-class ConnectivityImpl(private val context: Context) : Connectivity {
+internal interface Connectivity {
+    fun hasNetworkAccess(): Boolean
+}
+
+internal class ConnectivityImpl(private val context: Context) : Connectivity {
 
     override fun hasNetworkAccess(): Boolean {
         val connectivityManager =

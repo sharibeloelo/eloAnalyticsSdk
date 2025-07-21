@@ -1,19 +1,16 @@
-package com.greenhorn.neuronet.client.eloAnalytics
+package com.greenhorn.neuronet.client.repository
 
-import android.util.Log
 import com.greenhorn.neuronet.client.ApiClient
-import com.greenhorn.neuronet.log.utils.BaseRepository
-import com.greenhorn.neuronet.log.utils.Connectivity
-import com.greenhorn.neuronet.log.utils.Failure
-import com.greenhorn.neuronet.log.utils.NetworkResult
-import com.greenhorn.neuronet.log.utils.Result
-import com.greenhorn.neuronet.log.utils.Success
 import com.greenhorn.neuronet.model.EloAnalyticsEventDto
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.Types
+import com.greenhorn.neuronet.utils.BaseRepository
+import com.greenhorn.neuronet.utils.Connectivity
+import com.greenhorn.neuronet.utils.EloSdkLogger
+import com.greenhorn.neuronet.utils.Failure
+import com.greenhorn.neuronet.utils.NetworkResult
+import com.greenhorn.neuronet.utils.Result
+import com.greenhorn.neuronet.utils.Success
 
-private const val TAG = "EloAnalyticsRepositoryImpl"
-class EloAnalyticsRepositoryImpl(
+internal class EloAnalyticsRepositoryImpl(
     private val eloAnalyticsAPI: ApiClient,
     private val connectivity: Connectivity,
 ) : EloAnalyticsRepository, BaseRepository() {
@@ -24,7 +21,7 @@ class EloAnalyticsRepositoryImpl(
             }
 
             return doNetworkCall {
-                eloAnalyticsAPI.sendEventsNew(events = events) //todo: need to convert into json
+                eloAnalyticsAPI.sendEventsNew(events = events)
             }.run {
                 when (this) {
                     is NetworkResult.Success -> Success(true)
@@ -39,16 +36,10 @@ class EloAnalyticsRepositoryImpl(
             }
         } catch (error: Exception) {
             error.printStackTrace()
-            Log.e(TAG, "Error in sendEloAnalyticEvents error: ${error.message}")
+            EloSdkLogger.e( "Error in sendEloAnalyticEvents error: ${error.message}")
             Failure(
                 errorResponse = createExceptionResponse(e = error)
             )
         }
     }
-}
-
-fun List<EloAnalyticsEventDto>.toJsonString(moshi: Moshi): String {
-    val type = Types.newParameterizedType(List::class.java, EloAnalyticsEventDto::class.java)
-    val adapter = moshi.adapter<List<EloAnalyticsEventDto>>(type)
-    return adapter.toJson(this)
 }

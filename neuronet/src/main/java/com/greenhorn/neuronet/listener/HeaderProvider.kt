@@ -1,5 +1,5 @@
 package com.greenhorn.neuronet.listener
 
-interface HeaderProvider {
+internal interface HeaderProvider {
     fun getHeaders(): Map<String, String>
 }

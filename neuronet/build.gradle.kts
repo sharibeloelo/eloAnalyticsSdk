@@ -5,6 +5,9 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
     id("maven-publish")
+    id("kotlin-kapt")
+
+    kotlin("plugin.serialization") version "1.9.23"
 }
 
 android {
@@ -74,12 +77,8 @@ dependencies {
 //    implementation(libs.converter.gson)
     implementation(libs.logging.interceptor)
 
-    //Moshi
-    implementation(libs.converter.moshi)       // Moshi converter
-    implementation(libs.moshi.kotlin)
 
-
-    implementation(libs.kotlinx.serialization.json)
+    api(libs.kotlinx.serialization.json)
 
     // Work-Manager
     implementation(libs.androidx.work.runtime.ktx)
@@ -88,6 +87,12 @@ dependencies {
 //    implementation(libs.androidx.room.ktx)
     implementation(libs.room.runtime)
     ksp(libs.room.compiler)
+
+    // Kotlinx Serialization
+
+// Retrofit + Kotlinx Serialization converter
+    api(libs.retrofit.serialization.converter)
+
 
 //    implementation(libs.gson)
 }
