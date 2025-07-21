@@ -17,3 +17,9 @@ internal fun CoroutineScope.safeLaunch(
         launchBody()
     }
 }
+
+fun String?.orDefault(default: String = ""): String = this ?: default
+
+fun Int?.orDefault(defaultValue: Int = 0) = this ?: defaultValue
+
+fun Long?.orDefault(defaultValue: Long = 0L) = this ?: defaultValue
