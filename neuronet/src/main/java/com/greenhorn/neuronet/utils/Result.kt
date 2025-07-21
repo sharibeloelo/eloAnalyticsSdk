@@ -1,4 +1,4 @@
-package com.greenhorn.neuronet.log.utils
+package com.greenhorn.neuronet.utils
 
 import okhttp3.Headers
 import retrofit2.Response

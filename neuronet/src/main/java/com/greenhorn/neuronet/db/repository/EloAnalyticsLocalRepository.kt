@@ -1,6 +1,6 @@
 package com.greenhorn.neuronet.db.repository
 
-import com.greenhorn.neuronet.EloAnalyticsEvent
+import com.greenhorn.neuronet.model.EloAnalyticsEvent
 
 interface EloAnalyticsLocalRepository {
     suspend fun insertEvent(data: EloAnalyticsEvent): Long

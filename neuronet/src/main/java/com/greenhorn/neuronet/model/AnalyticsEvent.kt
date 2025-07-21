@@ -1,12 +1,8 @@
-package com.greenhorn.neuronet
+package com.greenhorn.neuronet.model
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import androidx.room.TypeConverter
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.Types
-import java.lang.reflect.Type
 
 
 /**
@@ -41,45 +37,4 @@ data class EloAnalyticsEvent(
         val timeStamp: String,
         val isUserLogin: Boolean
     )
-}
-
-
-/**
- * Room TypeConverter to convert the event parameters Map to a JSON string and back.
- * This allows storing complex data structures in a single database column.
- */
-class EventParamsConverter {
-    private val moshi = Moshi.Builder().build()
-
-    private val mapType: Type = Types.newParameterizedType(
-        Map::class.java,
-        String::class.java,
-        String::class.java
-    )
-
-    private val adapter = moshi.adapter<Map<String, String>>(mapType)
-
-    @TypeConverter
-    fun toMap(value: String?): Map<String, String>? {
-        return value?.let {
-            try {
-                adapter.fromJson(it)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                null
-            }
-        }
-    }
-
-    @TypeConverter
-    fun fromMap(map: Map<String, String>?): String? {
-        return map?.let {
-            try {
-                adapter.toJson(it)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                null
-            }
-        }
-    }
 }

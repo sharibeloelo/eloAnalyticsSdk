@@ -6,13 +6,13 @@ import androidx.work.CoroutineWorker
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
-import com.greenhorn.neuronet.AnalyticsSdkUtilProvider
 import com.greenhorn.neuronet.EloAnalyticsSdk
-import com.greenhorn.neuronet.EloAnalyticsEvent
 import com.greenhorn.neuronet.client.ApiClient
-import com.greenhorn.neuronet.client.eloAnalytics.EloAnalyticsRepositoryImpl
+import com.greenhorn.neuronet.client.ApiService
+import com.greenhorn.neuronet.client.repository.EloAnalyticsRepositoryImpl
 import com.greenhorn.neuronet.client.useCase.EloAnalyticsEventUseCase
 import com.greenhorn.neuronet.client.useCase.EloAnalyticsEventUseCaseImpl
+import com.greenhorn.neuronet.constant.DataStoreConstants
 import com.greenhorn.neuronet.db.AnalyticsDatabase
 import com.greenhorn.neuronet.db.repository.EloAnalyticsLocalRepositoryImpl
 import com.greenhorn.neuronet.db.usecase.EloAnalyticsLocalEventUseCase
@@ -20,19 +20,21 @@ import com.greenhorn.neuronet.db.usecase.EloAnalyticsLocalEventUseCaseImpl
 import com.greenhorn.neuronet.header.MutableHeaderProvider
 import com.greenhorn.neuronet.interceptor.HttpInterceptor
 import com.greenhorn.neuronet.interceptor.RetryInterceptor
-import com.greenhorn.neuronet.log.utils.ConnectivityImpl
-import com.greenhorn.neuronet.log.utils.DataStoreConstants
-import com.greenhorn.neuronet.log.utils.onFailure
-import com.greenhorn.neuronet.log.utils.onSuccess
+import com.greenhorn.neuronet.model.EloAnalyticsEvent
 import com.greenhorn.neuronet.model.mapper.EventMapper
-import com.greenhorn.neuronet.service.ApiService
+import com.greenhorn.neuronet.utils.AnalyticsSdkUtilProvider
+import com.greenhorn.neuronet.utils.ConnectivityImpl
+import com.greenhorn.neuronet.utils.onFailure
+import com.greenhorn.neuronet.utils.onSuccess
+import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import okhttp3.Interceptor
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
-import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
 
 internal class EloAnalyticsSyncWorker(
@@ -101,7 +103,10 @@ internal class EloAnalyticsSyncWorker(
             )
         )
             .onSuccess {
-                Log.d(EloAnalyticsSdk.TAG2, "Successfully sent ${storedEvents.size} events to server!")
+                Log.d(
+                    EloAnalyticsSdk.TAG2,
+                    "Successfully sent ${storedEvents.size} events to server!"
+                )
                 deleteSentEvents(storedEvents)
             }
             .onFailure {
@@ -122,6 +127,19 @@ class EloAnalyticsWorkerFactory(
 //    private val delegate: WorkerFactory?, todo: check
     private val analyticsSdkApiData: AnalyticsSdkApiData
 ) : WorkerFactory() {
+
+    private val json by lazy {
+        Json {
+            prettyPrint = true
+            isLenient = true
+            ignoreUnknownKeys = true
+            encodeDefaults = true
+            coerceInputValues = true
+        }
+    }
+
+    private val contentType by lazy { "application/json".toMediaType() }
+
 
     override fun createWorker(
         appContext: Context,
@@ -159,7 +177,7 @@ class EloAnalyticsWorkerFactory(
             val retrofit = Retrofit.Builder()
                 .baseUrl(baseUrl)
                 .client(finalOkHttpClient)
-                .addConverterFactory(MoshiConverterFactory.create())
+                .addConverterFactory(json.asConverterFactory(contentType))
                 .build()
 
             val apiService = retrofit.create(ApiService::class.java)

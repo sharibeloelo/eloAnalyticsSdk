@@ -1,7 +1,10 @@
 package com.greenhorn.neuronet.model.mapper
 
-import com.greenhorn.neuronet.EloAnalyticsEvent
+import com.greenhorn.neuronet.model.EloAnalyticsEvent
 import com.greenhorn.neuronet.model.EloAnalyticsEventDto
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.encodeToJsonElement
 
 object EventMapper {
     fun toEventDtos(
@@ -19,6 +22,15 @@ object EventMapper {
     }
 }
 
+fun Map<String, Any>.toStringMap(): Map<String, String> {
+    return this.mapValues { entry -> entry.value.toString() }
+}
+
+fun List<EloAnalyticsEventDto>.toJsonObject(): kotlinx.serialization.json.JsonArray {
+    val json = Json { encodeDefaults = true }
+    val elements: List<JsonElement> = this.map { json.encodeToJsonElement(it) }
+    return kotlinx.serialization.json.JsonArray(elements)
+}
 fun EloAnalyticsEvent.toEventDto(guestUserId: Long, currentUserId: Long): EloAnalyticsEventDto {
     val userId = if (this.isUserLogin) currentUserId else guestUserId
     return EloAnalyticsEventDto(

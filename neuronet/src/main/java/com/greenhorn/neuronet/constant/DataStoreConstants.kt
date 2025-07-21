@@ -1,4 +1,4 @@
-package com.greenhorn.neuronet.log.utils
+package com.greenhorn.neuronet.constant
 
 class DataStoreConstants {
     companion object {

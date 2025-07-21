@@ -5,9 +5,9 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import com.greenhorn.neuronet.EloAnalyticsEvent
-import com.greenhorn.neuronet.EventParamsConverter
-import kotlin.jvm.java
+import com.greenhorn.neuronet.db.dao.EloAnalyticsDao
+import com.greenhorn.neuronet.model.EloAnalyticsEvent
+import com.greenhorn.neuronet.model.EventParamsConverter
 
 /**
  * The Room database that holds the analytics_events table.

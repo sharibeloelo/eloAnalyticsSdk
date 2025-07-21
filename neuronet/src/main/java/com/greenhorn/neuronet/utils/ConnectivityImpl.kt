@@ -1,8 +1,12 @@
-package com.greenhorn.neuronet.log.utils
+package com.greenhorn.neuronet.utils
 
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+
+interface Connectivity {
+    fun hasNetworkAccess(): Boolean
+}
 
 class ConnectivityImpl(private val context: Context) : Connectivity {
 
