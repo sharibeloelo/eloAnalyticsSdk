@@ -1,5 +1,6 @@
 package com.greenhorn.neuronet.utils
 
+import com.greenhorn.neuronet.extension.orDefault
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 
@@ -63,14 +64,14 @@ object AnalyticsSdkUtilProvider {
 
     internal suspend fun getGuestUserId(): Long {
         if (guestUserId == 0L) {
-            guestUserId = dataProvider?.getGuestUserId() ?: 0L
+            guestUserId = dataProvider?.getGuestUserId().orDefault()
         }
         return guestUserId
     }
 
     internal suspend fun getCurrentUserId(): Long {
         if (userId == 0L) {
-            userId = dataProvider?.getCurrentUserId() ?: 0
+            userId = dataProvider?.getCurrentUserId().orDefault()
         }
         return userId
     }

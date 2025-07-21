@@ -14,6 +14,7 @@ import com.greenhorn.neuronet.db.AnalyticsDatabase
 import com.greenhorn.neuronet.db.repository.EloAnalyticsLocalRepositoryImpl
 import com.greenhorn.neuronet.db.usecase.EloAnalyticsLocalEventUseCase
 import com.greenhorn.neuronet.db.usecase.EloAnalyticsLocalEventUseCaseImpl
+import com.greenhorn.neuronet.extension.orDefault
 import com.greenhorn.neuronet.extension.safeLaunch
 import com.greenhorn.neuronet.header.MutableHeaderProvider
 import com.greenhorn.neuronet.interceptor.HttpInterceptor
@@ -133,8 +134,7 @@ class EloAnalyticsSdk private constructor(
         val mutableAttributes = attributes.toMutableMap()
 
         // Extract or generate timestamp
-        val eventTimestamp = mutableAttributes[EloAnalyticsEventDto.TIME_STAMP] as? String
-            ?: System.currentTimeMillis().toString()
+        val eventTimestamp = (mutableAttributes[EloAnalyticsEventDto.TIME_STAMP] as? String).orDefault(System.currentTimeMillis().toString())
 
         // Add AppsFlyer ID from config
         mutableAttributes[EloAnalyticsEventDto.APPS_FLYER_ID] = config.appsFlyerId.orEmpty()

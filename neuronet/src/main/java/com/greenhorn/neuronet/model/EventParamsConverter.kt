@@ -1,6 +1,7 @@
 package com.greenhorn.neuronet.model
 
 import androidx.room.TypeConverter
+import com.greenhorn.neuronet.extension.orDefault
 import kotlinx.serialization.json.Json
 
 /**
@@ -33,7 +34,7 @@ internal class EventParamsConverter {
     @TypeConverter
     fun toEloAnalyticsEventData(map: Map<String, String>?): String? {
         return try {
-            map?.let { json.encodeToString(it) } ?: ""
+            map?.let { json.encodeToString(it) }.orDefault()
         } catch (e: Exception) {
             e.printStackTrace()
             ""
