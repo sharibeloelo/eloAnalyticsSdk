@@ -2,7 +2,7 @@ package com.greenhorn.neuronet.db.repository
 
 import com.greenhorn.neuronet.model.EloAnalyticsEvent
 
-interface EloAnalyticsLocalRepository {
+internal interface EloAnalyticsLocalRepository {
     suspend fun insertEvent(data: EloAnalyticsEvent): Long
 
     suspend fun insertEvents(data: List<EloAnalyticsEvent>): List<Long>

@@ -1,8 +1,9 @@
 package com.greenhorn.neuronet.listener
 
-import android.app.Activity
-import com.greenhorn.neuronet.utils.FlushPendingEventTriggerSource
-
 interface EloAnalyticsEventManager {
-    fun flushPendingEvents(flushPendingEventTriggerSource: FlushPendingEventTriggerSource, activity: Activity? = null)
+    fun trackEvent(name: String, attributes: Map<String, Any>)
+
+    fun updateSessionTimeStamp(timeStamp: String)
+
+    fun updateHeader(header: Map<String, String>)
 }

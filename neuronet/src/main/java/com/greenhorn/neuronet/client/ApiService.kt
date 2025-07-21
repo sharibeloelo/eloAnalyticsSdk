@@ -8,7 +8,7 @@ import retrofit2.http.HeaderMap
 import retrofit2.http.POST
 import retrofit2.http.Url
 
-interface ApiService {
+internal interface ApiService {
     @POST()
     suspend fun sendEloAnalyticEvents(
         @Url url: String,

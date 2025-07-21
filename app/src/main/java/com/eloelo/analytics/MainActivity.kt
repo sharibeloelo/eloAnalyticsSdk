@@ -6,7 +6,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.greenhorn.neuronet.EloAnalyticsSdk
-import com.greenhorn.neuronet.utils.AnalyticsSdkUtilProvider
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -22,15 +21,16 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        AnalyticsSdkUtilProvider.updateSessionTimeStampAndCache(System.currentTimeMillis().toString())
+        EloAnalyticsSdk.getInstance().updateSessionTimeStamp(System.currentTimeMillis().toString())
 
         EloAnalyticsSdk.getInstance().trackEvent(
             name = "TEST_EVENT_ON_RESUME",
-            eventData = mutableMapOf(
+            attributes = mutableMapOf(
                 "checking1" to "data1",
                 "checking2" to "data2"
             )
         )
+
     }
 
     override fun onPause() {
@@ -38,7 +38,7 @@ class MainActivity : AppCompatActivity() {
 
         EloAnalyticsSdk.getInstance().trackEvent(
             name = "TEST_EVENT_ON_PAUSE",
-            eventData = mutableMapOf(
+            attributes = mutableMapOf(
                 "checking1" to "data1",
                 "checking2" to "data2"
             )

@@ -2,7 +2,7 @@ package com.greenhorn.neuronet.utils
 
 import android.util.Log
 
-object EloSdkLogger {
+internal object EloSdkLogger {
 
     private const val DEFAULT_TAG = "EloAnalyticsSDK_DEBUG"
     private var isDebug: Boolean = false

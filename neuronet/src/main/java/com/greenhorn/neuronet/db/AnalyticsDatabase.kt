@@ -17,7 +17,7 @@ import com.greenhorn.neuronet.model.EventParamsConverter
 @TypeConverters(
     EventParamsConverter::class
 )
-abstract class AnalyticsDatabase : RoomDatabase() {
+internal abstract class AnalyticsDatabase : RoomDatabase() {
 
     abstract fun eloAnalyticsEventDao(): EloAnalyticsDao
 

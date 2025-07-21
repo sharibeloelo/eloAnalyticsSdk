@@ -4,11 +4,11 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 
-interface Connectivity {
+internal interface Connectivity {
     fun hasNetworkAccess(): Boolean
 }
 
-class ConnectivityImpl(private val context: Context) : Connectivity {
+internal class ConnectivityImpl(private val context: Context) : Connectivity {
 
     override fun hasNetworkAccess(): Boolean {
         val connectivityManager =

@@ -1,7 +1,6 @@
 package com.greenhorn.neuronet.worker.syncWorker
 
 import android.content.Context
-import android.util.Log
 import androidx.annotation.MainThread
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
@@ -11,13 +10,11 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
-import com.greenhorn.neuronet.EloAnalyticsSdk
 import com.greenhorn.neuronet.utils.EloSdkLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 internal object EloAnalyticsWorkerUtils {
-    private const val TAG = "EloAnalyticsWorkerUtils"
     private const val ELO_ANALYTICS_WORKER = "ELO_ANALYTICS_WORKER"
 
     private lateinit var workManager: WorkManager

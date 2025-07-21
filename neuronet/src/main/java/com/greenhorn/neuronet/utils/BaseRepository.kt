@@ -5,14 +5,14 @@ import retrofit2.Response
 import java.io.IOException
 import java.net.SocketTimeoutException
 
-const val CODE_200 = 200
-const val CODE_201 = 201
+private const val CODE_200 = 200
+private const val CODE_201 = 201
 private const val CODE_600_ANDROID = 600
 private const val CODE_503_NO_INTERNET = 503
 
 private const val NO_INTERNET = "No Internet Connection!"
 
-open class BaseRepository {
+internal open class BaseRepository {
 
     private val TAG = "BaseRepository"
     var message = ""

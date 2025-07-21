@@ -1,15 +1,15 @@
 package com.greenhorn.neuronet.worker.syncWorker
 
 import android.content.Context
-import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
+import com.greenhorn.neuronet.EloAnalyticsDependencyContainer
 import com.greenhorn.neuronet.EloAnalyticsSdk
-import com.greenhorn.neuronet.constant.DataStoreConstants
 import com.greenhorn.neuronet.model.EloAnalyticsEvent
 import com.greenhorn.neuronet.model.mapper.EventMapper
+import com.greenhorn.neuronet.utils.AnalyticsSdkUtilProvider
 import com.greenhorn.neuronet.utils.EloSdkLogger
 import com.greenhorn.neuronet.utils.onFailure
 import com.greenhorn.neuronet.utils.onSuccess
@@ -19,7 +19,7 @@ import kotlinx.coroutines.withContext
 internal class EloAnalyticsSyncWorker(
     context: Context,
     workerParameters: WorkerParameters,
-    private val dependencyContainer: EloAnalyticsSdk.EloAnalyticsDependencyContainer
+    private val dependencyContainer: EloAnalyticsDependencyContainer
 ) : CoroutineWorker(context, params = workerParameters) {
 
     private val analyticsSdkUtilProvider get() = dependencyContainer.analyticsSdkUtilProvider
@@ -42,7 +42,9 @@ internal class EloAnalyticsSyncWorker(
                         eventData = event.eventData.toMutableMap().apply {
                             val id =
                                 if (event.isUserLogin) analyticsSdkUtilProvider.getCurrentUserId() else analyticsSdkUtilProvider.getGuestUserId()
-                            this[DataStoreConstants.USER_ID] = id.toString()
+                            AnalyticsSdkUtilProvider.getUserIdAttributeKeyName()?.let {
+                                this[it] = id.toString()
+                            }
                         }
                     )
                 }
@@ -113,7 +115,7 @@ class EloAnalyticsWorkerFactory(
             EloAnalyticsSyncWorker(
                 context = appContext,
                 workerParameters = workerParameters,
-                dependencyContainer = EloAnalyticsSdk.getInstance().getDependencyContainer()
+                dependencyContainer = EloAnalyticsSdk.getDependencyContainer()
             )
         } else {
             // Return null to delegate to the default WorkerFactory

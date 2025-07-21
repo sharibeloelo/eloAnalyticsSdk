@@ -10,7 +10,7 @@ import androidx.room.PrimaryKey
  * This data class is used as a Room Entity to store events locally.
  */
 @Entity(tableName = "analytics_sdk_events")
-data class EloAnalyticsEvent(
+internal data class EloAnalyticsEvent(
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo("id") val id: Long = 0L,
     @ColumnInfo("event_name") val eventName: String,

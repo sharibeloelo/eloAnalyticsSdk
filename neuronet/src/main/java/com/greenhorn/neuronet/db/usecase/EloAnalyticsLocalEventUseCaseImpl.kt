@@ -3,7 +3,7 @@ package com.greenhorn.neuronet.db.usecase
 import com.greenhorn.neuronet.model.EloAnalyticsEvent
 import com.greenhorn.neuronet.db.repository.EloAnalyticsLocalRepository
 
-class EloAnalyticsLocalEventUseCaseImpl (private val repository: EloAnalyticsLocalRepository) :
+internal class EloAnalyticsLocalEventUseCaseImpl (private val repository: EloAnalyticsLocalRepository) :
     EloAnalyticsLocalEventUseCase {
 
     override suspend fun insertEvent(data: EloAnalyticsEvent): Long = repository.insertEvent(data)

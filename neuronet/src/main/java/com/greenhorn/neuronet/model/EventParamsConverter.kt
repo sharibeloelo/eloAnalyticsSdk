@@ -7,7 +7,7 @@ import kotlinx.serialization.json.Json
  * Room TypeConverter to convert the event parameters Map to a JSON string and back.
  * This allows storing complex data structures in a single database column.
  */
-class EventParamsConverter {
+internal class EventParamsConverter {
     private val json by lazy {
         Json {
             prettyPrint = true

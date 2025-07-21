@@ -7,7 +7,7 @@ import androidx.room.Query
 import com.greenhorn.neuronet.model.EloAnalyticsEvent
 
 @Dao
-interface EloAnalyticsDao {
+internal interface EloAnalyticsDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertEvent(event: EloAnalyticsEvent): Long

@@ -1,18 +1,16 @@
 package com.greenhorn.neuronet.client.repository
 
-import android.util.Log
 import com.greenhorn.neuronet.client.ApiClient
+import com.greenhorn.neuronet.model.EloAnalyticsEventDto
 import com.greenhorn.neuronet.utils.BaseRepository
 import com.greenhorn.neuronet.utils.Connectivity
+import com.greenhorn.neuronet.utils.EloSdkLogger
 import com.greenhorn.neuronet.utils.Failure
 import com.greenhorn.neuronet.utils.NetworkResult
 import com.greenhorn.neuronet.utils.Result
 import com.greenhorn.neuronet.utils.Success
-import com.greenhorn.neuronet.model.EloAnalyticsEventDto
-import com.greenhorn.neuronet.utils.EloSdkLogger
 
-private const val TAG = "EloAnalyticsRepositoryImpl"
-class EloAnalyticsRepositoryImpl(
+internal class EloAnalyticsRepositoryImpl(
     private val eloAnalyticsAPI: ApiClient,
     private val connectivity: Connectivity,
 ) : EloAnalyticsRepository, BaseRepository() {

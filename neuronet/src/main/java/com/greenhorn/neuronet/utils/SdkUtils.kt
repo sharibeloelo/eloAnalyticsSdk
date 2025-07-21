@@ -1,6 +1,5 @@
 package com.greenhorn.neuronet.utils
 
-import com.greenhorn.neuronet.constant.DataStoreConstants
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 
@@ -11,6 +10,7 @@ data class EloAnalyticsConfig(
     val isDebug: Boolean = false,
     val appsFlyerId: String? = null,
     val headers: Map<String, String> = emptyMap(),
+    val userIdAttributeKeyName: String,
     val customOkHttpClient: OkHttpClient? = null,
     val customInterceptor: Interceptor? = null
 )
@@ -28,50 +28,56 @@ object AnalyticsSdkUtilProvider {
     private var userId: Long = 0L
     private var guestUserId: Long = 0L
 
-    fun initialize(provider: EloAnalyticsRuntimeProvider) {
+    private var userIdAttributeKeyName: String? = null
+
+    internal fun initialize(provider: EloAnalyticsRuntimeProvider) {
         dataProvider = provider
     }
 
-    fun setApiEndPoint(endPoint: String) {
+    internal fun getUserIdAttributeKeyName(): String? = userIdAttributeKeyName
+    internal fun setUserIdAttributeKeyName(keyName: String?) {
+        userIdAttributeKeyName = keyName
+    }
+
+    internal fun setApiEndPoint(endPoint: String) {
         apiFinalUrl = endPoint
     }
 
-    fun getApiEndPoint(): String {
+    internal fun getApiEndPoint(): String {
         return apiFinalUrl.orEmpty()
     }
 
     // ✅ Set and cache the session timestamp
-    fun updateSessionTimeStampAndCache(timeStamp: String) {
+    internal fun updateSessionTimeStampAndCache(timeStamp: String) {
         sessionTimeStamp = timeStamp
     }
 
     // ✅ Get from cache or fetch from app
-    fun getSessionTimeStamp(): String {
+    internal fun getSessionTimeStamp(): String {
         return sessionTimeStamp.orEmpty()
     }
 
-    suspend fun isUserLoggedIn(): Boolean? {
+    internal suspend fun isUserLoggedIn(): Boolean? {
         return dataProvider?.isUserLoggedIn()
     }
 
-    suspend fun getGuestUserId(): Long {
+    internal suspend fun getGuestUserId(): Long {
         if (guestUserId == 0L) {
-            guestUserId = dataProvider?.getGuestUserId(DataStoreConstants.GUEST_USER_ID) ?: 0L
+            guestUserId = dataProvider?.getGuestUserId() ?: 0L
         }
         return guestUserId
     }
 
-    suspend fun getCurrentUserId(): Long {
+    internal suspend fun getCurrentUserId(): Long {
         if (userId == 0L) {
-            userId = dataProvider?.getCurrentUserId(DataStoreConstants.USER_ID) ?: 0
+            userId = dataProvider?.getCurrentUserId() ?: 0
         }
         return userId
     }
 
-    fun recordFirebaseNonFatal(error: Throwable) {
+    internal fun recordFirebaseNonFatal(error: Throwable) {
         error.printStackTrace()
     }
-
 }
 
 
@@ -80,9 +86,9 @@ interface EloAnalyticsRuntimeProvider {
     fun getAppVersionCode(): String
     suspend fun isUserLoggedIn(): Boolean
 
-    suspend fun getCurrentUserId(key: String): Long
+    suspend fun getCurrentUserId(): Long
 
-    suspend fun getGuestUserId(key: String): Long
+    suspend fun getGuestUserId(): Long
 
     fun isAnalyticsSdkEnabled(): Boolean
 }

@@ -1,6 +1,6 @@
 package com.greenhorn.neuronet.enum
 
-enum class PRIORITY {
+internal enum class PRIORITY {
     LOW,
     HIGH
 }

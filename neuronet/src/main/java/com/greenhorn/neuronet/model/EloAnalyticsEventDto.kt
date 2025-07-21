@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 
 @Serializable
-data class EloAnalyticsEventDto(
+internal data class EloAnalyticsEventDto(
     val eventName: String,
     val eventTimeStamp: String,
     val primaryId: String,

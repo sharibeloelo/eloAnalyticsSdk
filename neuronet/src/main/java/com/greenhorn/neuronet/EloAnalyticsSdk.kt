@@ -17,7 +17,6 @@ import com.greenhorn.neuronet.db.usecase.EloAnalyticsLocalEventUseCaseImpl
 import com.greenhorn.neuronet.extension.safeLaunch
 import com.greenhorn.neuronet.header.MutableHeaderProvider
 import com.greenhorn.neuronet.interceptor.HttpInterceptor
-import com.greenhorn.neuronet.interceptor.RetryInterceptor
 import com.greenhorn.neuronet.listener.EloAnalyticsEventManager
 import com.greenhorn.neuronet.model.EloAnalyticsEvent
 import com.greenhorn.neuronet.model.EloAnalyticsEventDto
@@ -66,18 +65,14 @@ class EloAnalyticsSdk private constructor(
     private val runtimeProvider: EloAnalyticsRuntimeProvider,
 ) : EloAnalyticsEventManager {
 
-
     // Coroutine scope for async operations with IO dispatcher and SupervisorJob for error isolation
     private val supervisorScope by lazy {
         CoroutineScope(IO + SupervisorJob())
     }
 
-    private lateinit var dependencyContainer: EloAnalyticsDependencyContainer
-    fun getDependencyContainer(): EloAnalyticsDependencyContainer = dependencyContainer
-    fun setDependencyContainer(dependencies: EloAnalyticsDependencyContainer) {
+    internal fun setDependencyContainer(dependencies: EloAnalyticsDependencyContainer) {
         dependencyContainer = dependencies
     }
-
 
     // Thread-safe counter for tracking events before batch flush
     private val counterLock by lazy { Mutex() }
@@ -89,13 +84,16 @@ class EloAnalyticsSdk private constructor(
         @Volatile
         private var instance: EloAnalyticsSdk? = null
 
+        private lateinit var dependencyContainer: EloAnalyticsDependencyContainer
+        internal fun getDependencyContainer(): EloAnalyticsDependencyContainer = dependencyContainer
+
         /**
          * Returns the singleton instance of EloAnalyticsSdk.
          *
          * @return The initialized SDK instance
          * @throws IllegalStateException if SDK is not initialized
          */
-        fun getInstance(): EloAnalyticsSdk {
+        fun getInstance(): EloAnalyticsEventManager {
             return instance ?: synchronized(this) {
                 instance ?: throw IllegalStateException(
                     "EloAnalyticsSdk is not initialized. Call Builder.build() first."
@@ -121,9 +119,9 @@ class EloAnalyticsSdk private constructor(
      * 4. Increments counter and checks for batch flush trigger
      *
      * @param name The event name/identifier
-     * @param eventData Mutable map containing event data and properties
+     * @param attributes Mutable map containing event data and properties
      */
-    fun trackEvent(name: String, eventData: MutableMap<String, Any>) {
+    override fun trackEvent(name: String, attributes: Map<String, Any>) {
         EloSdkLogger.d("[trackEvent] name=$name")
 
         // Early return if analytics is disabled
@@ -132,16 +130,18 @@ class EloAnalyticsSdk private constructor(
             return
         }
 
+        val mutableAttributes = attributes.toMutableMap()
+
         // Extract or generate timestamp
-        val eventTimestamp = eventData[EloAnalyticsEventDto.TIME_STAMP] as? String
+        val eventTimestamp = mutableAttributes[EloAnalyticsEventDto.TIME_STAMP] as? String
             ?: System.currentTimeMillis().toString()
 
         // Add AppsFlyer ID from config
-        eventData[EloAnalyticsEventDto.APPS_FLYER_ID] = config.appsFlyerId.orEmpty()
+        mutableAttributes[EloAnalyticsEventDto.APPS_FLYER_ID] = config.appsFlyerId.orEmpty()
 
         supervisorScope.safeLaunch(
             {
-                val event = createAnalyticsEvent(name, eventTimestamp, eventData)
+                val event = createAnalyticsEvent(name, eventTimestamp, mutableAttributes)
                 EloSdkLogger.d("Created event: ${event.logEvent()}")
                 insertEventAndIncrementCounter(event)
             },
@@ -149,6 +149,15 @@ class EloAnalyticsSdk private constructor(
                 handleTrackingError(throwable, name)
             }
         )
+    }
+
+    override fun updateSessionTimeStamp(timeStamp: String) {
+        AnalyticsSdkUtilProvider.updateSessionTimeStampAndCache(timeStamp)
+    }
+
+    override fun updateHeader(header: Map<String, String>) {
+        EloSdkLogger.d("Updating Api headers!")
+        dependencyContainer.mutableHeaderProvider.updateHeaders(newHeaders = header)
     }
 
     /**
@@ -232,9 +241,9 @@ class EloAnalyticsSdk private constructor(
      * @param flushPendingEventTriggerSource Source that triggered the flush operation
      * @param activity Optional activity reference for context
      */
-    override fun flushPendingEvents(
+    internal fun flushPendingEvents(
         flushPendingEventTriggerSource: FlushPendingEventTriggerSource,
-        activity: Activity?
+        activity: Activity? = null
     ) {
         // Early return if analytics is disabled
         if (!runtimeProvider.isAnalyticsSdkEnabled()) {
@@ -242,7 +251,12 @@ class EloAnalyticsSdk private constructor(
             return
         }
 
-        EloSdkLogger.d("Flushing pending events triggered by: ${flushPendingEventTriggerSource.name}")
+        EloSdkLogger.d(
+            "Flushing pending events triggered by: ${flushPendingEventTriggerSource.name}, currentActivity: ${
+                activity?.localClassName
+            }"
+        )
+
         supervisorScope.safeLaunch(
             {
                 counterLock.withLock {
@@ -309,7 +323,10 @@ class EloAnalyticsSdk private constructor(
      *     .build()
      * ```
      */
-    class Builder(private val application: Application) {
+    class Builder(
+        private
+        val application: Application
+    ) {
         private var runtimeProvider: EloAnalyticsRuntimeProvider? = null
         private var config: EloAnalyticsConfig? = null
 
@@ -336,7 +353,7 @@ class EloAnalyticsSdk private constructor(
             this.runtimeProvider = provider
         }
 
-        fun initActivityLifecycleCallback(application: Application) {
+        private fun initActivityLifecycleCallback(application: Application) {
             application.registerActivityLifecycleCallbacks(ActivityTracker())
         }
 
@@ -348,7 +365,7 @@ class EloAnalyticsSdk private constructor(
                 flushPendingEventTriggerSource: FlushPendingEventTriggerSource,
                 activity: Activity
             ) {
-                getInstance().flushPendingEvents(
+                instance?.flushPendingEvents(
                     flushPendingEventTriggerSource,
                     activity = activity
                 )
@@ -372,7 +389,7 @@ class EloAnalyticsSdk private constructor(
                     EloSdkLogger.d("App went to background or killed, flushing events!")
                     getInstance().trackEvent(
                         name = Constant.APP_MINIMISE_OR_EXITED,
-                        eventData = mutableMapOf()
+                        attributes = mutableMapOf()
                     )
                     flushPendingEloAnalyticsEvents(
                         flushPendingEventTriggerSource = FlushPendingEventTriggerSource.APP_MINIMIZE,
@@ -380,6 +397,7 @@ class EloAnalyticsSdk private constructor(
                     ) // flush events for app minimise case
                 }
             }
+
             override fun onActivityPaused(activity: Activity) {}
             override fun onActivityStarted(activity: Activity) {}
             override fun onActivityCreated(p0: Activity, p1: Bundle?) {}
@@ -402,6 +420,10 @@ class EloAnalyticsSdk private constructor(
             EloSdkLogger.d("Building EloAnalyticsSdk instance!")
 
             val appContext = application.applicationContext
+
+            val userIdAttributeKeyName = config?.userIdAttributeKeyName
+            AnalyticsSdkUtilProvider.setUserIdAttributeKeyName(userIdAttributeKeyName)
+
             val finalConfig =
                 requireNotNull(config) { "EloAnalyticsConfig is required. Call setConfig() before build()." }
             validateConfiguration(finalConfig)
@@ -493,7 +515,6 @@ class EloAnalyticsSdk private constructor(
                         headerProvider
                     )
                 )
-                .addInterceptor(RetryInterceptor())
                 .addInterceptor(loggingInterceptor)
                 .retryOnConnectionFailure(true)
                 .connectTimeout(30, TimeUnit.SECONDS)
@@ -521,19 +542,14 @@ class EloAnalyticsSdk private constructor(
             )
         }
     }
-
-    fun updateHeader(header: Map<String, String>) {
-        EloSdkLogger.d("Updating Api headers!")
-        dependencyContainer.mutableHeaderProvider.updateHeaders(newHeaders = header)
-    }
-
-    /**
-     * Data class to hold SDK dependencies.
-     */
-    data class EloAnalyticsDependencyContainer(
-        val analyticsSdkUtilProvider: AnalyticsSdkUtilProvider,
-        val localEventUseCase: EloAnalyticsLocalEventUseCase,
-        val remoteEventUseCase: EloAnalyticsEventUseCase,
-        val mutableHeaderProvider: MutableHeaderProvider
-    )
 }
+
+/**
+ * Data class to hold SDK dependencies.
+ */
+internal data class EloAnalyticsDependencyContainer(
+    val analyticsSdkUtilProvider: AnalyticsSdkUtilProvider,
+    val localEventUseCase: EloAnalyticsLocalEventUseCase,
+    val remoteEventUseCase: EloAnalyticsEventUseCase,
+    val mutableHeaderProvider: MutableHeaderProvider
+)
