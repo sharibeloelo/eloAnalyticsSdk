@@ -123,7 +123,7 @@ class EloAnalyticsSdk private constructor(
      * @param attributes Mutable map containing event data and properties
      */
     override fun trackEvent(name: String, attributes: Map<String, Any>) {
-        EloSdkLogger.d("[trackEvent] name=$name")
+        EloSdkLogger.d("[trackEvent] name=$name, | attributes: $attributes")
 
         // Early return if analytics is disabled
         if (!runtimeProvider.isAnalyticsSdkEnabled()) {
