@@ -1,4 +1,4 @@
-# neuronet Analytics SDK
+# Elo Analytics SDK
 
 A modular, extensible analytics SDK for Android, designed to batch, store, and synchronize analytics events efficiently. Built with clean architecture, SOLID principles, and ready for integration into any Android app or library.
 
