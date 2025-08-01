@@ -6,6 +6,7 @@ import android.content.Context
 import android.os.Bundle
 import com.greenhorn.neuronet.client.ApiClient
 import com.greenhorn.neuronet.client.ApiService
+import com.greenhorn.neuronet.client.KtorClientFactory
 import com.greenhorn.neuronet.client.repository.EloAnalyticsRepositoryImpl
 import com.greenhorn.neuronet.client.useCase.EloAnalyticsEventUseCase
 import com.greenhorn.neuronet.client.useCase.EloAnalyticsEventUseCaseImpl
@@ -17,7 +18,6 @@ import com.greenhorn.neuronet.db.usecase.EloAnalyticsLocalEventUseCaseImpl
 import com.greenhorn.neuronet.extension.orDefault
 import com.greenhorn.neuronet.extension.safeLaunch
 import com.greenhorn.neuronet.header.MutableHeaderProvider
-import com.greenhorn.neuronet.interceptor.HttpInterceptor
 import com.greenhorn.neuronet.listener.EloAnalyticsEventManager
 import com.greenhorn.neuronet.model.EloAnalyticsEvent
 import com.greenhorn.neuronet.model.EloAnalyticsEventDto
@@ -29,19 +29,13 @@ import com.greenhorn.neuronet.utils.EloAnalyticsRuntimeProvider
 import com.greenhorn.neuronet.utils.EloSdkLogger
 import com.greenhorn.neuronet.utils.FlushPendingEventTriggerSource
 import com.greenhorn.neuronet.worker.syncWorker.EloAnalyticsWorkerUtils
-import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Retrofit
 import java.lang.ref.WeakReference
-import java.util.concurrent.TimeUnit
 
 /**
  * Main Analytics SDK class responsible for tracking, batching, and synchronizing analytics events.
@@ -51,11 +45,10 @@ import java.util.concurrent.TimeUnit
  * - Batch events locally before sending to server
  * - Handle offline scenarios by storing events in local database
  * - Automatically flush events based on batch size or manual triggers
+ * - Network communication using Ktor HTTP client (migrated from Retrofit)
  *
  * @property contextRef Weak reference to the application context to prevent memory leaks.
  * Used for enqueuing WorkManager jobs safely across the SDK.
- * @property eloAnalyticUtils Utility provider for SDK operations
- * @property useCase Use case for local event database operations
  * @property config SDK configuration containing endpoint URLs, batch sizes, etc.
  * @property runtimeProvider Provider for runtime checks (user login status, SDK enabled state)
  */
@@ -474,6 +467,18 @@ class EloAnalyticsSdk private constructor(
 
         /**
          * Creates the required dependencies for the SDK.
+         * 
+         * This method sets up all the necessary components for the analytics SDK including:
+         * - Local database access for event storage
+         * - Ktor HTTP client for network communication
+         * - Repository implementations for data access
+         * - Use case implementations for business logic
+         * 
+         * The network layer has been migrated from Retrofit to Ktor for better KMP support
+         * and modern Kotlin coroutines integration.
+         * 
+         * @param config The SDK configuration containing endpoints and settings
+         * @return EloAnalyticsDependencyContainer with all required dependencies
          */
         private fun createDependencies(config: EloAnalyticsConfig): EloAnalyticsDependencyContainer {
             val dao =
@@ -499,38 +504,13 @@ class EloAnalyticsSdk private constructor(
             AnalyticsSdkUtilProvider.setApiEndPoint(endPoint = baseUrl + finalApiEndpoint)
 
             EloSdkLogger.init(debug = config.isDebug)
-            // 2. Build dependencies in a clean, chained manner
-            val loggingInterceptor = HttpLoggingInterceptor().apply {
-                level =
-                    if (config.isDebug) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
-            }
-
-            val contentType by lazy { "application/json".toMediaType() }
-
+            
             val headerProvider = MutableHeaderProvider(config.headers)
-            // Use a custom OkHttpClient if provided, otherwise build a default one.
-            val finalOkHttpClient = config.customOkHttpClient ?: OkHttpClient.Builder()
-                .addInterceptor(
-                    config.customInterceptor ?: HttpInterceptor(
-                        headerProvider
-                    )
-                )
-                .addInterceptor(loggingInterceptor)
-                .retryOnConnectionFailure(true)
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .build()
-
-            val retrofit = Retrofit.Builder()
-                .baseUrl(baseUrl)
-                .client(finalOkHttpClient)
-                .addConverterFactory(json.asConverterFactory(contentType))
-                .build()
-
-            val apiService = retrofit.create(ApiService::class.java)
-
-            val apiClient = ApiClient(apiClient = apiService)
+            
+            // Initialize Ktor HTTP client for network communication
+            val httpClient = KtorClientFactory.createHttpClient()
+            val apiService = ApiService(httpClient)
+            val apiClient = ApiClient(apiService = apiService)
             val connectivity = ConnectivityImpl(appContext)
             val remoteEventRepository = EloAnalyticsRepositoryImpl(apiClient, connectivity)
             val remoteEventUseCase = EloAnalyticsEventUseCaseImpl(remoteEventRepository)

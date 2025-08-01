@@ -72,11 +72,12 @@ dependencies {
 
     implementation(libs.androidx.lifecycle.livedata.ktx)
 
-    //Retrofit
-    implementation(libs.retrofit)
-//    implementation(libs.converter.gson)
-    implementation(libs.logging.interceptor)
-
+    // Ktor dependencies
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.android)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
+    implementation(libs.ktor.client.logging)
 
     api(libs.kotlinx.serialization.json)
 
@@ -89,10 +90,4 @@ dependencies {
     ksp(libs.room.compiler)
 
     // Kotlinx Serialization
-
-// Retrofit + Kotlinx Serialization converter
-    api(libs.retrofit.serialization.converter)
-
-
-//    implementation(libs.gson)
 }
