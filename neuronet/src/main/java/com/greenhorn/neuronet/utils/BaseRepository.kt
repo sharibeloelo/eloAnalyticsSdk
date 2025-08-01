@@ -162,18 +162,7 @@ internal open class BaseRepository {
         }
     }
 
-    /**
-     * Creates an empty error response for fallback scenarios.
-     * 
-     * @return ErrorResponse with empty values
-     */
-    protected fun createEmptyErrorResponse(): ErrorResponse {
-        return ErrorResponse(
-            code = "",
-            message = "",
-            ErrorData(status = "")
-        )
-    }
+
 
     /**
      * Creates an error response from HTTP failure details.
@@ -233,23 +222,5 @@ internal open class BaseRepository {
     }
 }
 
-/**
- * Data wrapper for paginated API responses.
- * 
- * This class represents the structure of paginated responses from the analytics API,
- * containing metadata about the current page, total elements, and the actual content.
- * 
- * @param T The type of content in the response
- */
-data class DataSessionWrapper<T>(
-    val content: List<T>,
-    val empty: Boolean,
-    val first: Boolean,
-    val last: Boolean,
-    val number: Int,
-    val numberOfElements: Int,
-    val size: Int,
-    val totalElements: Int,
-    val totalPages: Int
-)
+
 
