@@ -1,8 +1,6 @@
 package com.greenhorn.neuronet.utils
 
 import com.greenhorn.neuronet.extension.orDefault
-import okhttp3.Interceptor
-import okhttp3.OkHttpClient
 
 data class EloAnalyticsConfig(
     val batchSize: Int = 10,
@@ -11,9 +9,7 @@ data class EloAnalyticsConfig(
     val isDebug: Boolean = false,
     val appsFlyerId: String? = null,
     val headers: Map<String, String> = emptyMap(),
-    val userIdAttributeKeyName: String,
-    val customOkHttpClient: OkHttpClient? = null,
-    val customInterceptor: Interceptor? = null
+    val userIdAttributeKeyName: String
 )
 
 enum class FlushPendingEventTriggerSource {
