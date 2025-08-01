@@ -12,7 +12,7 @@ internal interface ApiService {
     @POST()
     suspend fun sendEloAnalyticEvents(
         @Url url: String,
-        @HeaderMap headerMap: Map<String, List<String>>,
+        @HeaderMap headerMap: Map<String, String>,
         @Body events: JsonArray
     ): Response<JsonElement>
 }
