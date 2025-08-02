@@ -1,4 +1,4 @@
-package com.greenhorn.neuronet.db.repository
+package com.greenhorn.neuronet.repository.local
 
 import com.greenhorn.neuronet.model.EloAnalyticsEvent
 import com.greenhorn.neuronet.db.dao.EloAnalyticsDao

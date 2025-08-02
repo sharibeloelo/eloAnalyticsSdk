@@ -1,4 +1,4 @@
-package com.greenhorn.neuronet.client.repository
+package com.greenhorn.neuronet.repository.remote
 
 import com.greenhorn.neuronet.client.ApiClient
 import com.greenhorn.neuronet.model.EloAnalyticsEventDto
@@ -9,7 +9,6 @@ import com.greenhorn.neuronet.utils.Failure
 import com.greenhorn.neuronet.utils.NetworkResult
 import com.greenhorn.neuronet.utils.Result
 import com.greenhorn.neuronet.utils.Success
-import io.ktor.client.statement.HttpResponse
 
 /**
  * Implementation of the analytics repository for remote event transmission.
