@@ -499,15 +499,6 @@ class EloAnalyticsSdk private constructor(
 
             runtimeProvider?.let { utils.initialize(provider = it) }
 
-            val json = Json {
-                prettyPrint = true
-                isLenient = true
-                ignoreUnknownKeys = true
-                encodeDefaults = true
-                coerceInputValues = true
-            }
-
-
             val apiUrl = checkNotNull(config.apiUrl) { "API URL must be set." }
             AnalyticsSdkUtilProvider.setApiEndPoint(endPoint = apiUrl)
 
