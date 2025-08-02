@@ -1,6 +1,6 @@
-package com.greenhorn.neuronet.client.useCase
+package com.greenhorn.neuronet.usecase.remote
 
-import com.greenhorn.neuronet.client.repository.EloAnalyticsRepository
+import com.greenhorn.neuronet.repository.remote.EloAnalyticsRepository
 import com.greenhorn.neuronet.utils.Result
 import com.greenhorn.neuronet.model.EloAnalyticsEventDto
 
