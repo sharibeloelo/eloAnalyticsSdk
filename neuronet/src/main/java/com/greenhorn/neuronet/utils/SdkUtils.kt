@@ -5,8 +5,7 @@ import com.greenhorn.neuronet.extension.orDefault
 
 data class EloAnalyticsConfig(
     val batchSize: Int = 10,
-    val baseUrl: String,
-    val endpointUrl: String,
+    val apiUrl: String,
     val isDebug: Boolean = false,
     val appsFlyerId: String? = null,
     val headers: Map<String, String> = emptyMap(),

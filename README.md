@@ -83,8 +83,7 @@ class MyApplication : Application() {
         EloAnalyticsSdk.Builder(this)
             .setConfig(
                 EloAnalyticsConfig(
-                    baseUrl = "https://api.example.com",
-                    endpointUrl = "/analytics/events",
+                    apiUrl = "https://api.example.com/analytics/events",
                     batchSize = 20,
                     isDebug = BuildConfig.DEBUG,
                     appsFlyerId = "your-appsflyer-id",
@@ -179,8 +178,7 @@ The SDK uses a simplified approach for batch processing:
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `baseUrl` | String | Yes | Base URL for the analytics API |
-| `endpointUrl` | String | Yes | Endpoint path for events |
+| `apiUrl` | String | Yes | Complete API URL for the analytics endpoint |
 | `batchSize` | Int | Yes | Number of events to batch before sending |
 | `isDebug` | Boolean | No | Enable debug logging (default: false) |
 | `appsFlyerId` | String? | No | AppsFlyer ID for attribution |
