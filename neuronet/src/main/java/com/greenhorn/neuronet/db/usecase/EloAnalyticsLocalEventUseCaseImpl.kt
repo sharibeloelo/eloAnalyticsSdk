@@ -1,5 +1,6 @@
 package com.greenhorn.neuronet.db.usecase
 
+import com.greenhorn.neuronet.constant.Constant
 import com.greenhorn.neuronet.model.EloAnalyticsEvent
 import com.greenhorn.neuronet.db.repository.EloAnalyticsLocalRepository
 
@@ -11,7 +12,7 @@ internal class EloAnalyticsLocalEventUseCaseImpl (private val repository: EloAna
     override suspend fun insertEvents(data: List<EloAnalyticsEvent>): List<Long> = repository.insertEvents(data)
 
     override suspend fun deleteEvents(ids: List<Long>): Int {
-        val batchSize = 900 // by checking too many sql exception was happening on 30k+ but for safer side 900(common)
+        val batchSize = Constant.DEFAULT_DELETE_BATCH_SIZE // by checking too many sql exception was happening on 30k+ but for safer side 900(common)
         val idBatches = ids.chunked(batchSize)
 
         var deletedCount = 0
