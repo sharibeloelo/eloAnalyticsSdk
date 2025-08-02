@@ -1,8 +1,8 @@
-package com.greenhorn.neuronet.db.usecase
+package com.greenhorn.neuronet.usecase.local
 
 import com.greenhorn.neuronet.constant.Constant
 import com.greenhorn.neuronet.model.EloAnalyticsEvent
-import com.greenhorn.neuronet.db.repository.EloAnalyticsLocalRepository
+import com.greenhorn.neuronet.repository.local.EloAnalyticsLocalRepository
 
 internal class EloAnalyticsLocalEventUseCaseImpl (private val repository: EloAnalyticsLocalRepository) :
     EloAnalyticsLocalEventUseCase {

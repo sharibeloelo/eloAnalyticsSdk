@@ -7,14 +7,14 @@ import android.os.Bundle
 import com.greenhorn.neuronet.client.ApiClient
 import com.greenhorn.neuronet.client.ApiService
 import com.greenhorn.neuronet.client.KtorClientFactory
-import com.greenhorn.neuronet.client.repository.EloAnalyticsRepositoryImpl
-import com.greenhorn.neuronet.client.useCase.EloAnalyticsEventUseCase
-import com.greenhorn.neuronet.client.useCase.EloAnalyticsEventUseCaseImpl
+import com.greenhorn.neuronet.repository.remote.EloAnalyticsRepositoryImpl
+import com.greenhorn.neuronet.usecase.remote.EloAnalyticsEventUseCase
+import com.greenhorn.neuronet.usecase.remote.EloAnalyticsEventUseCaseImpl
 import com.greenhorn.neuronet.constant.Constant
 import com.greenhorn.neuronet.db.AnalyticsDatabase
-import com.greenhorn.neuronet.db.repository.EloAnalyticsLocalRepositoryImpl
-import com.greenhorn.neuronet.db.usecase.EloAnalyticsLocalEventUseCase
-import com.greenhorn.neuronet.db.usecase.EloAnalyticsLocalEventUseCaseImpl
+import com.greenhorn.neuronet.repository.local.EloAnalyticsLocalRepositoryImpl
+import com.greenhorn.neuronet.usecase.local.EloAnalyticsLocalEventUseCase
+import com.greenhorn.neuronet.usecase.local.EloAnalyticsLocalEventUseCaseImpl
 import com.greenhorn.neuronet.extension.orDefault
 import com.greenhorn.neuronet.extension.safeLaunch
 import com.greenhorn.neuronet.header.MutableHeaderProvider
@@ -498,15 +498,6 @@ class EloAnalyticsSdk private constructor(
             val utils = AnalyticsSdkUtilProvider
 
             runtimeProvider?.let { utils.initialize(provider = it) }
-
-            val json = Json {
-                prettyPrint = true
-                isLenient = true
-                ignoreUnknownKeys = true
-                encodeDefaults = true
-                coerceInputValues = true
-            }
-
 
             val apiUrl = checkNotNull(config.apiUrl) { "API URL must be set." }
             AnalyticsSdkUtilProvider.setApiEndPoint(endPoint = apiUrl)
