@@ -308,7 +308,7 @@ class EloAnalyticsSdk private constructor(
      * ```
      * val sdk = EloAnalyticsSdk.Builder(context)
      *     .setConfig {
-     *         endpointUrl = "https://api.example.com"
+     *         apiUrl = "https://api.example.com/analytics/events"
      *         batchSize = 20
      *         appsFlyerId = "your-appsflyer-id"
      *     }
@@ -448,15 +448,9 @@ class EloAnalyticsSdk private constructor(
          * Validates the configuration parameters.
          */
         private fun validateConfiguration(config: EloAnalyticsConfig) {
-            if (config.baseUrl.isBlank()) {
+            if (config.apiUrl.isBlank()) {
                 EloSdkLogger.w(
-                    "Base URL must be set"
-                )
-            }
-
-            if (config.endpointUrl.isBlank()) {
-                EloSdkLogger.w(
-                    "Warning: endpointUrl not set. Events may not be synchronized to server."
+                    "Warning: apiUrl not set. Events may not be synchronized to server."
                 )
             }
 
@@ -514,10 +508,8 @@ class EloAnalyticsSdk private constructor(
             }
 
 
-            val baseUrl = checkNotNull(config.baseUrl) { "Base URL must be set." }
-            val finalApiEndpoint =
-                requireNotNull(config.endpointUrl) { "API endpoint must be set." }
-            AnalyticsSdkUtilProvider.setApiEndPoint(endPoint = baseUrl + finalApiEndpoint)
+            val apiUrl = checkNotNull(config.apiUrl) { "API URL must be set." }
+            AnalyticsSdkUtilProvider.setApiEndPoint(endPoint = apiUrl)
 
             EloSdkLogger.init(debug = config.isDebug)
             
