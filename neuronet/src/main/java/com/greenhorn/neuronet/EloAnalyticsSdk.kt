@@ -463,6 +463,22 @@ class EloAnalyticsSdk private constructor(
             if (config.batchSize <= 0) {
                 throw IllegalArgumentException("Batch size must be greater than 0")
             }
+
+            // Validate sync batch size with detailed logging
+            when {
+                config.syncBatchSize == null -> {
+                    EloSdkLogger.w("Sync batch size not provided, will use default value of ${Constant.DEFAULT_SYNC_BATCH_SIZE}")
+                }
+                config.syncBatchSize < Constant.MIN_SYNC_BATCH_SIZE -> {
+                    EloSdkLogger.e("❌ ERROR: Invalid sync batch size (${config.syncBatchSize})")
+                    EloSdkLogger.e("   Minimum required: ${Constant.MIN_SYNC_BATCH_SIZE}")
+                    EloSdkLogger.e("   Using default value: ${Constant.DEFAULT_SYNC_BATCH_SIZE}")
+                    EloSdkLogger.w("💡 TIP: Set syncBatchSize to at least ${Constant.MIN_SYNC_BATCH_SIZE} for optimal performance")
+                }
+                else -> {
+                    EloSdkLogger.d("✅ Sync batch size validated: ${config.syncBatchSize}")
+                }
+            }
         }
 
         /**
@@ -504,6 +520,9 @@ class EloAnalyticsSdk private constructor(
             AnalyticsSdkUtilProvider.setApiEndPoint(endPoint = baseUrl + finalApiEndpoint)
 
             EloSdkLogger.init(debug = config.isDebug)
+            
+            // Set sync batch size with validation and logging
+            AnalyticsSdkUtilProvider.setSyncBatchSize(config.syncBatchSize)
             
             val headerProvider = MutableHeaderProvider(config.headers)
             

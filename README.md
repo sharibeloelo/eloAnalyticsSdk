@@ -10,6 +10,7 @@ A modern Android analytics SDK built with Kotlin and Ktor for seamless event tra
 - **Automatic Sync**: Background synchronization using WorkManager
 - **Ktor Integration**: Modern HTTP client for better Kotlin Multiplatform (KMP) support
 - **Type Safety**: Full Kotlin serialization support with compile-time safety
+- **Simple Batch Processing**: Uses LIMIT only for efficient database fetching
 
 ## 📋 Requirements
 
@@ -148,11 +149,29 @@ Events are automatically enriched with:
 
 The SDK automatically handles:
 
-- **Batch Processing**: Events are batched before sending
+- **Batch Processing**: Events are batched before sending (default: 10000 events per batch)
 - **Offline Storage**: Events stored locally when offline
 - **Background Sync**: WorkManager handles background synchronization
-- **Retry Logic**: Automatic retries for failed requests
+- **Simple Processing**: Uses LIMIT only for efficient database fetching
 - **Error Handling**: Comprehensive error processing and logging
+
+### Batch Processing Details:
+
+The SDK uses a simplified approach for batch processing:
+
+```kotlin
+// Example: Processing 25,000 events
+// Batch 1: SELECT * FROM analytics_sdk_events LIMIT 10000
+// Batch 2: SELECT * FROM analytics_sdk_events LIMIT 10000  
+// Batch 3: SELECT * FROM analytics_sdk_events LIMIT 5000
+```
+
+**Key Features:**
+- ✅ **Default Batch Size**: 10,000 events per batch (from constants)
+- ✅ **Simple Database Queries**: Uses only LIMIT, no OFFSET
+- ✅ **No Retry Logic**: Failed batches are logged but not retried
+- ✅ **Memory Efficient**: Only current batch loaded into memory
+- ✅ **Progress Tracking**: Detailed logging of batch processing
 
 ## 🛠️ Configuration Options
 
@@ -167,6 +186,59 @@ The SDK automatically handles:
 | `appsFlyerId` | String? | No | AppsFlyer ID for attribution |
 | `headers` | Map<String, String> | No | Custom HTTP headers |
 | `userIdAttributeKeyName` | String | Yes | Key name for user ID in events |
+| `syncBatchSize` | Int? | No | Number of events to process in each sync batch (min: 1000, default: 10000) |
+
+### Configuration Constants
+
+The SDK uses centralized constants defined in `Constant.kt`:
+
+```kotlin
+object Constant {
+    const val DEFAULT_SYNC_BATCH_SIZE = 10000     // Default batch size
+    const val MIN_SYNC_BATCH_SIZE = 1000          // Minimum valid batch size
+    const val DEFAULT_DELETE_BATCH_SIZE = 900     // DB delete batch size
+}
+```
+
+### Batch Size Validation
+
+The SDK validates the `syncBatchSize` parameter during initialization:
+
+- **Minimum Value**: 1000 events
+- **Default Value**: 10000 events (if not provided or invalid)
+- **Validation**: Automatically uses default if value is null or < 1000
+
+#### Example Logs:
+
+```kotlin
+// Valid batch size
+EloAnalyticsSdk.Builder(this)
+    .setConfig(EloAnalyticsConfig(
+        syncBatchSize = 5000,  // ✅ Valid
+        // ... other config
+    ))
+    .build()
+// Log: ✅ Sync batch size set to 5000
+
+// Invalid batch size (too small)
+EloAnalyticsSdk.Builder(this)
+    .setConfig(EloAnalyticsConfig(
+        syncBatchSize = 500,   // ❌ Too small
+        // ... other config
+    ))
+    .build()
+// Log: ❌ ERROR: Sync batch size (500) cannot be less than 1000. Using default value of 10000
+// Log: 💡 TIP: Set syncBatchSize to at least 1000 for optimal performance
+
+// Null batch size
+EloAnalyticsSdk.Builder(this)
+    .setConfig(EloAnalyticsConfig(
+        syncBatchSize = null,  // Will use default
+        // ... other config
+    ))
+    .build()
+// Log: Sync batch size is null, using default value of 10000
+```
 
 ## 🔧 Advanced Usage
 
@@ -222,7 +294,10 @@ Debug logs will show:
 - Background sync status
 - Error details and stack traces
 
-#
+## 🔧 Migration from Retrofit
+
+The SDK has been migrated from Retrofit to Ktor for better KMP support:
+
 ### Breaking Changes:
 - Error handling improved with better type safety
 

@@ -1,5 +1,6 @@
 package com.greenhorn.neuronet.utils
 
+import com.greenhorn.neuronet.constant.Constant
 import com.greenhorn.neuronet.extension.orDefault
 
 data class EloAnalyticsConfig(
@@ -9,7 +10,8 @@ data class EloAnalyticsConfig(
     val isDebug: Boolean = false,
     val appsFlyerId: String? = null,
     val headers: Map<String, String> = emptyMap(),
-    val userIdAttributeKeyName: String
+    val userIdAttributeKeyName: String,
+    val syncBatchSize: Int? = null // Optional sync batch size
 )
 
 enum class FlushPendingEventTriggerSource {
@@ -24,6 +26,7 @@ object AnalyticsSdkUtilProvider {
     private var sessionTimeStamp: String? = null
     private var userId: Long = 0L
     private var guestUserId: Long = 0L
+    private var syncBatchSize: Int = Constant.DEFAULT_SYNC_BATCH_SIZE
 
     private var userIdAttributeKeyName: String? = null
 
@@ -71,6 +74,39 @@ object AnalyticsSdkUtilProvider {
         }
         return userId
     }
+
+    /**
+     * Sets the sync batch size with validation.
+     * 
+     * If the provided batch size is less than 1000 or null, it will use the default
+     * batch size and log a warning message to the user.
+     * 
+     * @param batchSize The batch size to set (must be >= 1000)
+     */
+    internal fun setSyncBatchSize(batchSize: Int?) {
+        when {
+            batchSize == null -> {
+                EloSdkLogger.w("Sync batch size is null, using default value of ${Constant.DEFAULT_SYNC_BATCH_SIZE}")
+                syncBatchSize = Constant.DEFAULT_SYNC_BATCH_SIZE
+            }
+            batchSize < Constant.MIN_SYNC_BATCH_SIZE -> {
+                EloSdkLogger.e("❌ ERROR: Sync batch size ($batchSize) cannot be less than ${Constant.MIN_SYNC_BATCH_SIZE}. Using default value of ${Constant.DEFAULT_SYNC_BATCH_SIZE}")
+                EloSdkLogger.w("💡 TIP: Set syncBatchSize to at least ${Constant.MIN_SYNC_BATCH_SIZE} for optimal performance")
+                syncBatchSize = Constant.DEFAULT_SYNC_BATCH_SIZE
+            }
+            else -> {
+                EloSdkLogger.d("✅ Sync batch size set to $batchSize")
+                syncBatchSize = batchSize
+            }
+        }
+    }
+
+    /**
+     * Gets the configured sync batch size.
+     * 
+     * @return The validated sync batch size (always >= 1000)
+     */
+    internal fun getSyncBatchSize(): Int = syncBatchSize
 
     internal fun recordFirebaseNonFatal(error: Throwable) {
         error.printStackTrace()
