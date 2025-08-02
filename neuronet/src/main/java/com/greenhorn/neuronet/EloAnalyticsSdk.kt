@@ -7,14 +7,8 @@ import android.os.Bundle
 import com.greenhorn.neuronet.client.ApiClient
 import com.greenhorn.neuronet.client.ApiService
 import com.greenhorn.neuronet.client.KtorClientFactory
-import com.greenhorn.neuronet.repository.remote.EloAnalyticsRepositoryImpl
-import com.greenhorn.neuronet.usecase.remote.EloAnalyticsEventUseCase
-import com.greenhorn.neuronet.usecase.remote.EloAnalyticsEventUseCaseImpl
 import com.greenhorn.neuronet.constant.Constant
 import com.greenhorn.neuronet.db.AnalyticsDatabase
-import com.greenhorn.neuronet.repository.local.EloAnalyticsLocalRepositoryImpl
-import com.greenhorn.neuronet.usecase.local.EloAnalyticsLocalEventUseCase
-import com.greenhorn.neuronet.usecase.local.EloAnalyticsLocalEventUseCaseImpl
 import com.greenhorn.neuronet.extension.orDefault
 import com.greenhorn.neuronet.extension.safeLaunch
 import com.greenhorn.neuronet.header.MutableHeaderProvider
@@ -22,6 +16,12 @@ import com.greenhorn.neuronet.listener.EloAnalyticsEventManager
 import com.greenhorn.neuronet.model.EloAnalyticsEvent
 import com.greenhorn.neuronet.model.EloAnalyticsEventDto
 import com.greenhorn.neuronet.model.mapper.toStringMap
+import com.greenhorn.neuronet.repository.local.EloAnalyticsLocalRepositoryImpl
+import com.greenhorn.neuronet.repository.remote.EloAnalyticsRepositoryImpl
+import com.greenhorn.neuronet.usecase.local.EloAnalyticsLocalEventUseCase
+import com.greenhorn.neuronet.usecase.local.EloAnalyticsLocalEventUseCaseImpl
+import com.greenhorn.neuronet.usecase.remote.EloAnalyticsEventUseCase
+import com.greenhorn.neuronet.usecase.remote.EloAnalyticsEventUseCaseImpl
 import com.greenhorn.neuronet.utils.AnalyticsSdkUtilProvider
 import com.greenhorn.neuronet.utils.ConnectivityImpl
 import com.greenhorn.neuronet.utils.EloAnalyticsConfig
@@ -34,7 +34,6 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.serialization.json.Json
 import java.lang.ref.WeakReference
 
 /**
@@ -127,7 +126,10 @@ class EloAnalyticsSdk private constructor(
         val mutableAttributes = attributes.toMutableMap()
 
         // Extract or generate timestamp
-        val eventTimestamp = (mutableAttributes[EloAnalyticsEventDto.TIME_STAMP] as? String).orDefault(System.currentTimeMillis().toString())
+        val eventTimestamp =
+            (mutableAttributes[EloAnalyticsEventDto.TIME_STAMP] as? String).orDefault(
+                System.currentTimeMillis().toString()
+            )
 
         // Add AppsFlyer ID from config
         mutableAttributes[EloAnalyticsEventDto.APPS_FLYER_ID] = config.appsFlyerId.orEmpty()
@@ -463,12 +465,14 @@ class EloAnalyticsSdk private constructor(
                 config.syncBatchSize == null -> {
                     EloSdkLogger.w("Sync batch size not provided, will use default value of ${Constant.DEFAULT_SYNC_BATCH_SIZE}")
                 }
+
                 config.syncBatchSize < Constant.MIN_SYNC_BATCH_SIZE -> {
                     EloSdkLogger.e("❌ ERROR: Invalid sync batch size (${config.syncBatchSize})")
                     EloSdkLogger.e("   Minimum required: ${Constant.MIN_SYNC_BATCH_SIZE}")
                     EloSdkLogger.e("   Using default value: ${Constant.DEFAULT_SYNC_BATCH_SIZE}")
                     EloSdkLogger.w("💡 TIP: Set syncBatchSize to at least ${Constant.MIN_SYNC_BATCH_SIZE} for optimal performance")
                 }
+
                 else -> {
                     EloSdkLogger.d("✅ Sync batch size validated: ${config.syncBatchSize}")
                 }
@@ -477,16 +481,16 @@ class EloAnalyticsSdk private constructor(
 
         /**
          * Creates the required dependencies for the SDK.
-         * 
+         *
          * This method sets up all the necessary components for the analytics SDK including:
          * - Local database access for event storage
          * - Ktor HTTP client for network communication
          * - Repository implementations for data access
          * - Use case implementations for business logic
-         * 
+         *
          * The network layer has been migrated from Retrofit to Ktor for better KMP support
          * and modern Kotlin coroutines integration.
-         * 
+         *
          * @param config The SDK configuration containing endpoints and settings
          * @return EloAnalyticsDependencyContainer with all required dependencies
          */
@@ -503,12 +507,12 @@ class EloAnalyticsSdk private constructor(
             AnalyticsSdkUtilProvider.setApiEndPoint(endPoint = apiUrl)
 
             EloSdkLogger.init(debug = config.isDebug)
-            
+
             // Set sync batch size with validation and logging
             AnalyticsSdkUtilProvider.setSyncBatchSize(config.syncBatchSize)
-            
+
             val headerProvider = MutableHeaderProvider(config.headers)
-            
+
             // Initialize Ktor HTTP client for network communication
             val httpClient = KtorClientFactory.createHttpClient()
             val apiService = ApiService(httpClient)
