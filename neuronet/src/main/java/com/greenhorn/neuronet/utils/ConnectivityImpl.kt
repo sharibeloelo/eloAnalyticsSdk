@@ -15,14 +15,33 @@ internal class ConnectivityImpl(private val context: Context) : Connectivity {
             context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
         val nw = connectivityManager?.activeNetwork ?: return false
         val actNw = connectivityManager.getNetworkCapabilities(nw) ?: return false
-        return when {
-            actNw.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
-            actNw.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
+        
+        val hasNetwork = when {
+            actNw.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> {
+                EloSdkLogger.d("Network available: WiFi")
+                true
+            }
+            actNw.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> {
+                EloSdkLogger.d("Network available: Cellular")
+                true
+            }
             //for other device how are able to connect with Ethernet
-            actNw.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> true
+            actNw.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> {
+                EloSdkLogger.d("Network available: Ethernet")
+                true
+            }
             //for check internet over Bluetooth
-            actNw.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH) -> true
-            else -> false
+            actNw.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH) -> {
+                EloSdkLogger.d("Network available: Bluetooth")
+                true
+            }
+            else -> {
+                EloSdkLogger.w("No network access available")
+                false
+            }
         }
+        
+        EloSdkLogger.d("Network connectivity check result: $hasNetwork")
+        return hasNetwork
     }
 }

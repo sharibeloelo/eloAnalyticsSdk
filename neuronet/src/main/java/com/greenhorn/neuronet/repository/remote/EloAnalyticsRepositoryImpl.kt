@@ -49,12 +49,16 @@ internal class EloAnalyticsRepositoryImpl(
      * @throws Exception if unexpected errors occur during the process
      */
     override suspend fun sendEloAnalyticEvents(events: List<EloAnalyticsEventDto>): Result<Boolean> {
+        EloSdkLogger.d("Sending ${events.size} events to remote server")
+        
         return try {
             // Check network connectivity before attempting to send events
             if (!connectivity.hasNetworkAccess()) {
+                EloSdkLogger.w("No network access available")
                 return handleNoInternetCase()
             }
 
+            EloSdkLogger.d("Network available, executing API call")
             // Execute the network call using BaseRepository's infrastructure
             return doNetworkCall<Boolean> {
                 eloAnalyticsAPI.sendEventsNew(events = events)
@@ -63,16 +67,19 @@ internal class EloAnalyticsRepositoryImpl(
                 when (this) {
                     is NetworkResult.Success -> {
                         // Successfully sent events to the backend
+                        EloSdkLogger.d("Successfully sent ${events.size} events to server")
                         Success(true)
                     }
                     is NetworkResult.Failure -> {
                         // Network call failed, create error response
+                        EloSdkLogger.e("Network failure: ${this.errorMessage} (code: ${this.errorCode})")
                         Failure(
                             errorResponse = createErrorResponse(this)
                         )
                     }
                     is NetworkResult.HttpFailure -> {
                         // HTTP-level failure occurred, create error response
+                        EloSdkLogger.e("HTTP failure: ${this.errorCode} - ${this.message}")
                         Failure(
                             errorResponse = createErrorResponse(this)
                         )

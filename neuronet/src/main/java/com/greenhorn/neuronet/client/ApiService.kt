@@ -1,5 +1,6 @@
 package com.greenhorn.neuronet.client
 
+import com.greenhorn.neuronet.utils.EloSdkLogger
 import io.ktor.client.HttpClient
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -46,6 +47,10 @@ internal class ApiService(private val httpClient: HttpClient) {
         headerMap: Map<String, String>,
         events: JsonArray
     ): HttpResponse {
+        EloSdkLogger.d("ApiService: Making POST request to: $url")
+        EloSdkLogger.d("ApiService: Request headers: $headerMap")
+        EloSdkLogger.d("ApiService: Request body size: ${events.size} events")
+        
         return httpClient.post {
             // Set the target URL for the request
             this.url(url)
@@ -60,6 +65,8 @@ internal class ApiService(private val httpClient: HttpClient) {
             headerMap.forEach { (key, value) ->
                 headers.append(key, value)
             }
+        }.also {
+            EloSdkLogger.d("ApiService: HTTP request completed with status: ${it.status}")
         }
     }
 }
