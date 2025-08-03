@@ -27,7 +27,7 @@ import com.greenhorn.neuronet.utils.ConnectivityImpl
 import com.greenhorn.neuronet.utils.EloAnalyticsConfig
 import com.greenhorn.neuronet.utils.EloAnalyticsRuntimeProvider
 import com.greenhorn.neuronet.utils.EloSdkLogger
-import com.greenhorn.neuronet.utils.FlushPendingEventTriggerSource
+
 import com.greenhorn.neuronet.worker.syncWorker.EloAnalyticsWorkerUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
@@ -87,10 +87,14 @@ class EloAnalyticsSdk private constructor(
          * @throws IllegalStateException if SDK is not initialized
          */
         fun getInstance(): EloAnalyticsEventManager {
+            EloSdkLogger.d("Getting SDK instance")
             return instance ?: synchronized(this) {
-                instance ?: throw IllegalStateException(
-                    "EloAnalyticsSdk is not initialized. Call Builder.build() first."
-                )
+                instance ?: run {
+                    EloSdkLogger.e("SDK not initialized. Call Builder.build() first.")
+                    throw IllegalStateException(
+                        "EloAnalyticsSdk is not initialized. Call Builder.build() first."
+                    )
+                }
             }
         }
 
@@ -99,7 +103,11 @@ class EloAnalyticsSdk private constructor(
          *
          * @return true if initialized, false otherwise
          */
-        fun isInitialized(): Boolean = instance != null
+        fun isInitialized(): Boolean {
+            val isInit = instance != null
+            EloSdkLogger.d("SDK initialization check: $isInit")
+            return isInit
+        }
     }
 
     /**
@@ -147,12 +155,28 @@ class EloAnalyticsSdk private constructor(
     }
 
     override fun updateSessionTimeStamp(timeStamp: String) {
+        EloSdkLogger.d("Updating session timestamp: $timeStamp")
         AnalyticsSdkUtilProvider.updateSessionTimeStampAndCache(timeStamp)
     }
 
     override fun updateHeader(header: Map<String, String>) {
-        EloSdkLogger.d("Updating Api headers!")
+        EloSdkLogger.d("Updating API headers: $header")
         dependencyContainer.mutableHeaderProvider.updateHeaders(newHeaders = header)
+    }
+
+    override fun flushEventsOnBackgroundOrKilled() {
+        EloSdkLogger.d("Flushing events on background or killed")
+        flushPendingEvents(triggerName = "app_background")
+    }
+
+    override fun flushEventsOnDestroy() {
+        EloSdkLogger.d("Flushing events on destroy")
+        flushPendingEvents(triggerName = "activity_destroy")
+    }
+
+    override fun flushEvents(triggerName: String) {
+        EloSdkLogger.d("Flushing events with trigger: $triggerName")
+        flushPendingEvents(triggerName = triggerName)
     }
 
     /**
@@ -163,11 +187,18 @@ class EloAnalyticsSdk private constructor(
         timestamp: String,
         eventData: MutableMap<String, Any>
     ): EloAnalyticsEvent {
+        EloSdkLogger.d("Creating analytics event: name=$name, timestamp=$timestamp")
+        
+        val isUserLogin = runtimeProvider.isUserLoggedIn()
+        val sessionTimeStamp = dependencyContainer.analyticsSdkUtilProvider.getSessionTimeStamp()
+        
+        EloSdkLogger.d("Event creation params: isUserLogin=$isUserLogin, sessionTimeStamp=$sessionTimeStamp")
+        
         return EloAnalyticsEvent(
             eventName = name,
-            isUserLogin = runtimeProvider.isUserLoggedIn(),
+            isUserLogin = isUserLogin,
             eventTimestamp = timestamp,
-            sessionTimeStamp = dependencyContainer.analyticsSdkUtilProvider.getSessionTimeStamp(),
+            sessionTimeStamp = sessionTimeStamp,
             eventData = eventData.toStringMap()
         )
     }
@@ -213,9 +244,7 @@ class EloAnalyticsSdk private constructor(
 
                 if (eventCounter >= triggerCountSize) {
                     EloSdkLogger.d("Batch size reached, triggering flush")
-                    flushPendingEvents(
-                        flushPendingEventTriggerSource = FlushPendingEventTriggerSource.EVENT_BATCH_COUNT_COMPLETE
-                    )
+                    flushPendingEvents(triggerName = "batch_count_complete")
                 }
             }
         } catch (e: Exception) {
@@ -233,11 +262,11 @@ class EloAnalyticsSdk private constructor(
      * 2. Checks if there are pending events in database
      * 3. Enqueues a background work request to sync events
      *
-     * @param flushPendingEventTriggerSource Source that triggered the flush operation
+     * @param triggerName Name of the trigger that caused the flush
      * @param activity Optional activity reference for context
      */
     internal fun flushPendingEvents(
-        flushPendingEventTriggerSource: FlushPendingEventTriggerSource,
+        triggerName: String,
         activity: Activity? = null
     ) {
         // Early return if analytics is disabled
@@ -247,7 +276,7 @@ class EloAnalyticsSdk private constructor(
         }
 
         EloSdkLogger.d(
-            "Flushing pending events triggered by: ${flushPendingEventTriggerSource.name}, currentActivity: ${
+            "Flushing pending events triggered by: $triggerName, currentActivity: ${
                 activity?.localClassName
             }"
         )
@@ -357,11 +386,11 @@ class EloAnalyticsSdk private constructor(
             private var taskId: Int? = null
 
             private fun flushPendingEloAnalyticsEvents(
-                flushPendingEventTriggerSource: FlushPendingEventTriggerSource,
+                triggerName: String,
                 activity: Activity
             ) {
                 instance?.flushPendingEvents(
-                    flushPendingEventTriggerSource,
+                    triggerName = triggerName,
                     activity = activity
                 )
             }
@@ -369,7 +398,7 @@ class EloAnalyticsSdk private constructor(
             override fun onActivityDestroyed(activity: Activity) {
                 EloSdkLogger.d("Activity destroyed, flushing all pending events!")
                 flushPendingEloAnalyticsEvents(
-                    flushPendingEventTriggerSource = FlushPendingEventTriggerSource.ACTIVITY_DESTROY,
+                    triggerName = "activity_destroy",
                     activity = activity
                 )// flush events for activity destroyed case
             }
@@ -387,7 +416,7 @@ class EloAnalyticsSdk private constructor(
                         attributes = mutableMapOf()
                     )
                     flushPendingEloAnalyticsEvents(
-                        flushPendingEventTriggerSource = FlushPendingEventTriggerSource.APP_MINIMIZE,
+                        triggerName = "app_background",
                         activity = activity
                     ) // flush events for app minimise case
                 }
