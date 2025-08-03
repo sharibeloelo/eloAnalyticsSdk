@@ -8,6 +8,7 @@ import androidx.room.TypeConverters
 import com.greenhorn.neuronet.db.dao.EloAnalyticsDao
 import com.greenhorn.neuronet.model.EloAnalyticsEvent
 import com.greenhorn.neuronet.model.EventParamsConverter
+import com.greenhorn.neuronet.utils.EloSdkLogger
 
 /**
  * The Room database that holds the analytics_events table.
@@ -30,6 +31,7 @@ internal abstract class AnalyticsDatabase : RoomDatabase() {
             // Multiple threads can ask for the database instance at the same time,
             // so we use synchronized to ensure only one thread can create it.
             return INSTANCE ?: synchronized(this) {
+                EloSdkLogger.d("Database: Creating new database instance")
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AnalyticsDatabase::class.java,
@@ -37,6 +39,7 @@ internal abstract class AnalyticsDatabase : RoomDatabase() {
                 )
                     .build()
                 INSTANCE = instance
+                EloSdkLogger.d("Database: Database instance created successfully")
                 instance
             }
         }

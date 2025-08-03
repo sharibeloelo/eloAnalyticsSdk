@@ -4,6 +4,7 @@ import com.greenhorn.neuronet.EloAnalyticsSdk
 import com.greenhorn.neuronet.model.EloAnalyticsEventDto
 import com.greenhorn.neuronet.model.mapper.toJsonArray
 import com.greenhorn.neuronet.utils.AnalyticsSdkUtilProvider
+import com.greenhorn.neuronet.utils.EloSdkLogger
 import io.ktor.client.statement.HttpResponse
 
 /**
@@ -38,15 +39,26 @@ internal class ApiClient(val apiService: ApiService) {
      * @throws Exception if the request preparation or transmission fails
      */
     suspend fun sendEventsNew(events: List<EloAnalyticsEventDto>): HttpResponse {
+        EloSdkLogger.d("ApiClient: Sending ${events.size} events to API")
+        
+        val apiEndpoint = AnalyticsSdkUtilProvider.getApiEndPoint()
+        val headers = EloAnalyticsSdk.getDependencyContainer().mutableHeaderProvider.getHeaders()
+        
+        EloSdkLogger.d("ApiClient: API endpoint: $apiEndpoint")
+        EloSdkLogger.d("ApiClient: Headers: $headers")
+        
+        val jsonEvents = events.toJsonArray()
+        EloSdkLogger.d("ApiClient: Converted events to JSON array")
+        
         return apiService.sendEloAnalyticEvents(
             // Get the configured API endpoint from the SDK
-            url = AnalyticsSdkUtilProvider.getApiEndPoint(),
+            url = apiEndpoint,
             
             // Retrieve current headers from the SDK's header provider
-            headerMap = EloAnalyticsSdk.getDependencyContainer().mutableHeaderProvider.getHeaders(),
+            headerMap = headers,
             
             // Convert events to JSON array format for transmission
-            events = events.toJsonArray()
+            events = jsonEvents
         )
     }
 }
