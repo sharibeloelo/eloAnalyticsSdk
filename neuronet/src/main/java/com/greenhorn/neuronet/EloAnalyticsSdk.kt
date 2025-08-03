@@ -3,7 +3,6 @@ package com.greenhorn.neuronet
 import android.app.Activity
 import android.app.Application
 import android.content.Context
-import android.os.Bundle
 import com.greenhorn.neuronet.client.ApiClient
 import com.greenhorn.neuronet.client.ApiService
 import com.greenhorn.neuronet.client.KtorClientFactory
@@ -377,56 +376,7 @@ class EloAnalyticsSdk private constructor(
             this.runtimeProvider = provider
         }
 
-        private fun initActivityLifecycleCallback(application: Application) {
-            application.registerActivityLifecycleCallbacks(ActivityTracker())
-        }
 
-        private inner class ActivityTracker : Application.ActivityLifecycleCallbacks {
-            private var activityTag: String? = null
-            private var taskId: Int? = null
-
-            private fun flushPendingEloAnalyticsEvents(
-                triggerName: String,
-                activity: Activity
-            ) {
-                instance?.flushPendingEvents(
-                    triggerName = triggerName,
-                    activity = activity
-                )
-            }
-
-            override fun onActivityDestroyed(activity: Activity) {
-                EloSdkLogger.d("Activity destroyed, flushing all pending events!")
-                flushPendingEloAnalyticsEvents(
-                    triggerName = "activity_destroy",
-                    activity = activity
-                )// flush events for activity destroyed case
-            }
-
-            override fun onActivityResumed(activity: Activity) {
-                taskId = activity.taskId
-                activityTag = activity.localClassName
-            }
-
-            override fun onActivityStopped(activity: Activity) {
-                if (activity.localClassName == activityTag && activity.taskId == taskId) {
-                    EloSdkLogger.d("App went to background or killed, flushing events!")
-                    getInstance().trackEvent(
-                        name = Constant.APP_MINIMISE_OR_EXITED,
-                        attributes = mutableMapOf()
-                    )
-                    flushPendingEloAnalyticsEvents(
-                        triggerName = "app_background",
-                        activity = activity
-                    ) // flush events for app minimise case
-                }
-            }
-
-            override fun onActivityPaused(activity: Activity) {}
-            override fun onActivityStarted(activity: Activity) {}
-            override fun onActivityCreated(p0: Activity, p1: Bundle?) {}
-            override fun onActivitySaveInstanceState(activity: Activity, p1: Bundle) {}
-        }
 
         /**
          * Builds and initializes the EloAnalyticsSdk instance.
@@ -438,8 +388,6 @@ class EloAnalyticsSdk private constructor(
             if (isInitialized()) {
                 EloSdkLogger.w("EloAnalyticsSdk is already initialized. Reinitializing...")
             }
-
-            initActivityLifecycleCallback(application)
 
             EloSdkLogger.d("Building EloAnalyticsSdk instance!")
 
