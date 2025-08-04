@@ -25,6 +25,7 @@ class MainActivity : AppCompatActivity() {
 
         EloAnalyticsSdk.getInstance().trackEvent(
             name = "TEST_EVENT_ON_RESUME",
+            userId = 123,
             attributes = mutableMapOf(
                 "checking1" to "data1",
                 "checking2" to "data2"
@@ -38,6 +39,7 @@ class MainActivity : AppCompatActivity() {
 
         EloAnalyticsSdk.getInstance().trackEvent(
             name = "TEST_EVENT_ON_PAUSE",
+            userId = 2324,
             attributes = mutableMapOf(
                 "checking1" to "data1",
                 "checking2" to "data2"

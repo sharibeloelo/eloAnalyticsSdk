@@ -1,7 +1,7 @@
 package com.greenhorn.neuronet.repository.remote
 
 import com.greenhorn.neuronet.client.ApiClient
-import com.greenhorn.neuronet.model.EloAnalyticsEventDto
+import com.greenhorn.neuronet.model.EloAnalyticsEvent
 import com.greenhorn.neuronet.utils.BaseRepository
 import com.greenhorn.neuronet.utils.Connectivity
 import com.greenhorn.neuronet.utils.EloSdkLogger
@@ -48,7 +48,7 @@ internal class EloAnalyticsRepositoryImpl(
      * 
      * @throws Exception if unexpected errors occur during the process
      */
-    override suspend fun sendEloAnalyticEvents(events: List<EloAnalyticsEventDto>): Result<Boolean> {
+    override suspend fun sendEloAnalyticEvents(events: List<EloAnalyticsEvent>): Result<Boolean> {
         EloSdkLogger.d("Sending ${events.size} events to remote server")
         
         return try {
