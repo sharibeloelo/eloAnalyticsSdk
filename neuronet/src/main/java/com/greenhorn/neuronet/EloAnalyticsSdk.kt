@@ -13,7 +13,6 @@ import com.greenhorn.neuronet.extension.safeLaunch
 import com.greenhorn.neuronet.header.MutableHeaderProvider
 import com.greenhorn.neuronet.listener.EloAnalyticsEventManager
 import com.greenhorn.neuronet.model.EloAnalyticsEvent
-import com.greenhorn.neuronet.model.EloAnalyticsEventDto
 import com.greenhorn.neuronet.model.mapper.toStringMap
 import com.greenhorn.neuronet.repository.local.EloAnalyticsLocalRepositoryImpl
 import com.greenhorn.neuronet.repository.remote.EloAnalyticsRepositoryImpl
@@ -24,9 +23,7 @@ import com.greenhorn.neuronet.usecase.remote.EloAnalyticsEventUseCaseImpl
 import com.greenhorn.neuronet.utils.AnalyticsSdkUtilProvider
 import com.greenhorn.neuronet.utils.ConnectivityImpl
 import com.greenhorn.neuronet.utils.EloAnalyticsConfig
-import com.greenhorn.neuronet.utils.EloAnalyticsRuntimeProvider
 import com.greenhorn.neuronet.utils.EloSdkLogger
-
 import com.greenhorn.neuronet.worker.syncWorker.EloAnalyticsWorkerUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
@@ -54,7 +51,6 @@ import java.lang.ref.WeakReference
 class EloAnalyticsSdk private constructor(
     private val contextRef: WeakReference<Context>,
     private val config: EloAnalyticsConfig,
-    private val runtimeProvider: EloAnalyticsRuntimeProvider,
 ) : EloAnalyticsEventManager {
 
     // Coroutine scope for async operations with IO dispatcher and SupervisorJob for error isolation
@@ -121,29 +117,25 @@ class EloAnalyticsSdk private constructor(
      * @param name The event name/identifier
      * @param attributes Mutable map containing event data and properties
      */
-    override fun trackEvent(name: String, attributes: Map<String, Any>) {
+    override fun trackEvent(name: String, userId: Long, attributes: Map<String, Any>) {
         EloSdkLogger.d("[trackEvent] name=$name, | attributes: $attributes")
-
-        // Early return if analytics is disabled
-        if (!runtimeProvider.isAnalyticsSdkEnabled()) {
-            EloSdkLogger.d("Analytics SDK is disabled, skipping event: $name")
-            return
-        }
 
         val mutableAttributes = attributes.toMutableMap()
 
         // Extract or generate timestamp
         val eventTimestamp =
-            (mutableAttributes[EloAnalyticsEventDto.TIME_STAMP] as? String).orDefault(
+            (mutableAttributes[EloAnalyticsEvent.TIME_STAMP] as? String).orDefault(
                 System.currentTimeMillis().toString()
             )
 
-        // Add AppsFlyer ID from config
-        mutableAttributes[EloAnalyticsEventDto.APPS_FLYER_ID] = config.appsFlyerId.orEmpty()
-
         supervisorScope.safeLaunch(
             {
-                val event = createAnalyticsEvent(name, eventTimestamp, mutableAttributes)
+                val event = createAnalyticsEvent(
+                    name = name,
+                    timestamp = eventTimestamp,
+                    userId = userId,
+                    eventData = mutableAttributes
+                )
                 EloSdkLogger.d("Created event: ${event.logEvent()}")
                 insertEventAndIncrementCounter(event)
             },
@@ -181,24 +173,24 @@ class EloAnalyticsSdk private constructor(
     /**
      * Creates an EloAnalyticsEvent from the provided parameters.
      */
-    private suspend fun createAnalyticsEvent(
+    private fun createAnalyticsEvent(
         name: String,
         timestamp: String,
+        userId: Long,
         eventData: MutableMap<String, Any>
     ): EloAnalyticsEvent {
         EloSdkLogger.d("Creating analytics event: name=$name, timestamp=$timestamp")
-        
-        val isUserLogin = runtimeProvider.isUserLoggedIn()
+
         val sessionTimeStamp = dependencyContainer.analyticsSdkUtilProvider.getSessionTimeStamp()
-        
-        EloSdkLogger.d("Event creation params: isUserLogin=$isUserLogin, sessionTimeStamp=$sessionTimeStamp")
-        
+
+        EloSdkLogger.d("Event creation params: sessionTimeStamp=$sessionTimeStamp")
+
         return EloAnalyticsEvent(
             eventName = name,
-            isUserLogin = isUserLogin,
-            eventTimestamp = timestamp,
-            sessionTimeStamp = sessionTimeStamp,
-            eventData = eventData.toStringMap()
+            eventData = eventData.toStringMap(),
+            timestamp = timestamp,
+            primaryId = "${userId}_${timestamp}",
+            sessionId = "${userId}_${sessionTimeStamp}",
         )
     }
 
@@ -268,12 +260,6 @@ class EloAnalyticsSdk private constructor(
         triggerName: String,
         activity: Activity? = null
     ) {
-        // Early return if analytics is disabled
-        if (!runtimeProvider.isAnalyticsSdkEnabled()) {
-            EloSdkLogger.d("Analytics SDK is disabled, skipping flushing events!")
-            return
-        }
-
         EloSdkLogger.d(
             "Flushing pending events triggered by: $triggerName, currentActivity: ${
                 activity?.localClassName
@@ -350,7 +336,6 @@ class EloAnalyticsSdk private constructor(
         private
         val application: Application
     ) {
-        private var runtimeProvider: EloAnalyticsRuntimeProvider? = null
         private var config: EloAnalyticsConfig? = null
 
         private val appContext = application.applicationContext
@@ -364,19 +349,6 @@ class EloAnalyticsSdk private constructor(
         fun setConfig(config: EloAnalyticsConfig) = apply {
             this.config = config
         }
-
-
-        /**
-         * Sets the runtime provider for checking SDK state and user login status.
-         *
-         * @param provider Runtime provider implementation
-         * @return Builder instance for method chaining
-         */
-        fun setRuntimeProvider(provider: EloAnalyticsRuntimeProvider) = apply {
-            this.runtimeProvider = provider
-        }
-
-
 
         /**
          * Builds and initializes the EloAnalyticsSdk instance.
@@ -393,9 +365,6 @@ class EloAnalyticsSdk private constructor(
 
             val appContext = application.applicationContext
 
-            val userIdAttributeKeyName = config?.userIdAttributeKeyName
-            AnalyticsSdkUtilProvider.setUserIdAttributeKeyName(userIdAttributeKeyName)
-
             val finalConfig =
                 requireNotNull(config) { "EloAnalyticsConfig is required. Call setConfig() before build()." }
             validateConfiguration(finalConfig)
@@ -410,10 +379,7 @@ class EloAnalyticsSdk private constructor(
 
             val instance = EloAnalyticsSdk(
                 contextRef = WeakReference(appContext),
-                config = finalConfig,
-                runtimeProvider = requireNotNull(runtimeProvider) {
-                    "EloAnalyticsRuntimeProvider is required. Call setRuntimeProvider() before build()."
-                }
+                config = finalConfig
             )
 
             instance.setDependencyContainer(dependencies = dependencyContainer)
@@ -477,8 +443,6 @@ class EloAnalyticsSdk private constructor(
             val repo = EloAnalyticsLocalRepositoryImpl(dao)
             val useCase = EloAnalyticsLocalEventUseCaseImpl(repo)
             val utils = AnalyticsSdkUtilProvider
-
-            runtimeProvider?.let { utils.initialize(provider = it) }
 
             val apiUrl = checkNotNull(config.apiUrl) { "API URL must be set." }
             AnalyticsSdkUtilProvider.setApiEndPoint(endPoint = apiUrl)

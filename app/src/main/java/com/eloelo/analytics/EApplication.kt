@@ -8,8 +8,6 @@ import androidx.work.Configuration
 import androidx.work.DelegatingWorkerFactory
 import com.greenhorn.neuronet.EloAnalyticsSdk
 import com.greenhorn.neuronet.utils.EloAnalyticsConfig
-import com.greenhorn.neuronet.utils.EloAnalyticsRuntimeProvider
-
 import com.greenhorn.neuronet.worker.syncWorker.EloAnalyticsWorkerFactory
 
 private const val TAG = "EloEloApplication"
@@ -22,29 +20,6 @@ class EApplication : Application(), Configuration.Provider{
         delegatingWorkerFactory = DelegatingWorkerFactory()
 
         EloAnalyticsSdk.Builder(this)
-            .setRuntimeProvider(object : EloAnalyticsRuntimeProvider {
-
-                override suspend fun isUserLoggedIn(): Boolean {
-                    return true
-                }
-
-                override fun getAppVersionCode(): String {
-                    return "13133123"
-                }
-
-                override suspend fun getCurrentUserId(): Long {
-                    return 10000
-                }
-
-                override suspend fun getGuestUserId(): Long {
-                    return 111011L
-                }
-
-                override fun isAnalyticsSdkEnabled(): Boolean {
-                    return true
-                }
-
-            })
             .setConfig(
                 config = EloAnalyticsConfig(
                     batchSize = 2,
@@ -52,7 +27,6 @@ class EApplication : Application(), Configuration.Provider{
                     isDebug = true,
                     headers = mapOf("version_code" to "1212",
                         "father" to "23"),
-                    userIdAttributeKeyName = "user_id"
                 )
             )
             .build()
@@ -93,6 +67,7 @@ class EApplication : Application(), Configuration.Provider{
             // Track screen view
             EloAnalyticsSdk.getInstance().trackEvent(
                 name = "screen_view",
+                userId = 123,
                 attributes = mapOf(
                     "screen_name" to activity.localClassName,
                     "timestamp" to System.currentTimeMillis()
@@ -110,6 +85,7 @@ class EApplication : Application(), Configuration.Provider{
                 // Track app background event
                 EloAnalyticsSdk.getInstance().trackEvent(
                     name = "app_background",
+                    userId = 133,
                     attributes = mapOf(
                         "timestamp" to System.currentTimeMillis(),
                         "last_screen" to activity.localClassName

@@ -1,7 +1,7 @@
 package com.greenhorn.neuronet.client
 
 import com.greenhorn.neuronet.EloAnalyticsSdk
-import com.greenhorn.neuronet.model.EloAnalyticsEventDto
+import com.greenhorn.neuronet.model.EloAnalyticsEvent
 import com.greenhorn.neuronet.model.mapper.toJsonArray
 import com.greenhorn.neuronet.utils.AnalyticsSdkUtilProvider
 import com.greenhorn.neuronet.utils.EloSdkLogger
@@ -38,7 +38,7 @@ internal class ApiClient(val apiService: ApiService) {
      * 
      * @throws Exception if the request preparation or transmission fails
      */
-    suspend fun sendEventsNew(events: List<EloAnalyticsEventDto>): HttpResponse {
+    suspend fun sendEventsNew(events: List<EloAnalyticsEvent>): HttpResponse {
         EloSdkLogger.d("ApiClient: Sending ${events.size} events to API")
         
         val apiEndpoint = AnalyticsSdkUtilProvider.getApiEndPoint()

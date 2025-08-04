@@ -107,7 +107,7 @@ interface EloAnalyticsEventManager {
      * @throws IllegalArgumentException if event name is empty
      * @throws IllegalStateException if SDK is not properly initialized
      */
-    fun trackEvent(name: String, attributes: Map<String, Any>)
+    fun trackEvent(name: String, userId: Long, attributes: Map<String, Any>)
 
     /**
      * Updates the session timestamp used for grouping related events.
